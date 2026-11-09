@@ -82,7 +82,7 @@ export const RejectForm: FC<FormProps> = ({ title, callback }) => {
           type: "custom", // Or any other custom error type
           message: e.message,
         },
-        { shouldFocus: true }
+        { shouldFocus: true },
       );
     }
   };
@@ -205,7 +205,7 @@ export const RejectForm: FC<FormProps> = ({ title, callback }) => {
           <Button
             className={cn(
               "rounded-full px-4 py-2 w-[50%]",
-              isValid ? "bg-[#F04438]" : "bg-[#FAA69A]"
+              isValid ? "bg-[#F04438]" : "bg-[#FAA69A]",
             )}
             disabled={!isValid || isSubmitting}
             type="submit"
@@ -238,10 +238,15 @@ export const ApproveForm: FC<ApproveFormProps> = ({
 
   const onSubmit = async (value: ApproveFormSchema) => {
     try {
-      await callback(value);
       reset();
     } catch (error) {
       const e = parseAxiosError(error);
+
+      if (e.status === 406) {
+        await callback(false);
+        reset();
+        return;
+      }
 
       setError(
         "root",
@@ -249,7 +254,7 @@ export const ApproveForm: FC<ApproveFormProps> = ({
           type: "custom", // Or any other custom error type
           message: e.message,
         },
-        { shouldFocus: false }
+        { shouldFocus: false },
       );
     }
   };
@@ -395,7 +400,7 @@ export const ApproveForm: FC<ApproveFormProps> = ({
           <Button
             className={cn(
               "rounded-2xl w-[50%]",
-              isValid ? "bg-primary" : "bg-[#2E890299]"
+              isValid ? "bg-primary" : "bg-[#2E890299]",
             )}
             disabled={!isValid || isSubmitting}
             type="submit"

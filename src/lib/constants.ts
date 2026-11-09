@@ -104,4 +104,6 @@ const therapistData = {
 export const accountApproval = "account.approved",
   accountRejected = "account.rejected",
   therapySchedule = "therapy.scheduled",
-  therapyReschedule = "therapy.resheduled";
+  therapyReschedule = "therapy.resheduled",
+  therapyCancelled = "therapy.cancelled",
+  therapyCompleted = "therapy.completed";

@@ -159,7 +159,7 @@ export default function ProfileSetupPage() {
         payload,
       };
 
-      await api.post("/users/account?profileType=therapist", body);
+      await api.patch(`/account/verify/therapists/${data?.user_id}`, body);
 
       // Final approval
       reasons.length > 0
@@ -372,7 +372,7 @@ export default function ProfileSetupPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {steps.map((step, index) => {
                   const completed = completedSteps.find(
-                    (s) => s.id === step.id
+                    (s) => s.id === step.id,
                   );
                   const isActive = activeStep === index;
                   const isUpcoming = index > activeStep;
@@ -574,7 +574,7 @@ export default function ProfileSetupPage() {
                               <div className="font-medium">
                                 {datetime.formatWithPattern(
                                   datetime.toDateTime(data.dob),
-                                  "D MMM, YYYY"
+                                  "D MMM, YYYY",
                                 )}
                               </div>
                             </div>

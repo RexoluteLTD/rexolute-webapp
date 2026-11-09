@@ -1,21 +1,37 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { jwtDecode } from "jwt-decode";
-import { AuthToken } from "@/types";
 
 import { ApiClient as api } from "@/lib/api";
 import { JWT } from "next-auth/jwt";
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const { data } = await api.post("/auth/refresh-token", {});
-    const decoded: any = jwtDecode(data);
+    const res = await api.post(
+      "/auth/refresh-token",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token.refreshToken}`,
+        },
+      },
+    );
+    const data = res.data?.data;
+
+    if (!data?.access_token) {
+      throw new Error("Invalid refresh token response");
+    }
+
+    const decoded: any = jwtDecode(data.access_token);
 
     return {
       ...token,
+      role: decoded.role,
+      permissions: decoded.permissions,
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? token.refreshToken,
-      expiresAt: Date.now() + data.expires_in * 1000,
+      expiresAt: decoded.exp * 1000,
+      error: undefined,
     };
   } catch (error) {
     console.error("Refresh Token Error:", error);
@@ -27,9 +43,8 @@ export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
 
   pages: {
-    signIn: "/auth/signin",
-    verifyRequest: "/auth/verify",
-    error: "/auth/error",
+    signIn: "/auth/admin/login",
+    error: "/auth/errors",
   },
 
   session: {
@@ -81,7 +96,7 @@ export default NextAuth({
     /**
      * Runs whenever a JWT is created or updated
      */
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         const accessToken = (user as any).accessToken;
         const refreshToken = (user as any).refreshToken;
@@ -96,15 +111,30 @@ export default NextAuth({
         token.expiresAt = decoded.exp * 1000;
       }
 
-      // If token still valid → return it
-      // if (Date.now() < token.expiresAt) {
-      //   return token;
-      // }
+      if (trigger === "update" && session?.user) {
+        token.accessToken = session.user.accessToken ?? token.accessToken;
+        token.refreshToken = session.user.refreshToken ?? token.refreshToken;
+        token.role = session.user.role ?? token.role;
+        token.permissions = session.user.permissions ?? token.permissions;
 
-      // Refresh
-      // return refreshAccessToken(token);
+        if (token.accessToken) {
+          const decoded: any = jwtDecode(token.accessToken);
+          token.expiresAt = decoded.exp * 1000;
+        }
 
-      return token;
+        return token;
+      }
+
+      if (!token.accessToken || !token.expiresAt) {
+        return token;
+      }
+
+      // Refresh a little early to avoid racing requests with an expiring token.
+      if (Date.now() < token.expiresAt - 60_000) {
+        return token;
+      }
+
+      return refreshAccessToken(token);
     },
     /**
      * Controls what is sent to the client inside session
@@ -118,6 +148,7 @@ export default NextAuth({
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,
       };
+      session.error = token.error;
 
       return session;
     },
