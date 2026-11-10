@@ -81,13 +81,10 @@ jobs:
         env:
           TARGET: ${{ needs.plan.outputs.environment }}
           BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
-          API_URL: ${{ vars.VITE_API_BASE_URL }}
         run: |
           set -euo pipefail
           : "${BASE_DOMAIN:?Set BASE_DOMAIN in the GitHub environment}"
-          : "${API_URL:?Set VITE_API_BASE_URL in the GitHub environment}"
           [[ "$BASE_DOMAIN" =~ ^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$ ]]
-          [[ "$API_URL" =~ ^https://[^[:space:]]+$ ]]
           domain="$BASE_DOMAIN"
           if [ "$TARGET" = development ]; then domain="dev.$BASE_DOMAIN"; fi
           echo "domain=$domain" >> "$GITHUB_OUTPUT"
@@ -110,7 +107,7 @@ jobs:
           tags: ${{ steps.config.outputs.image }}:${{ needs.plan.outputs.environment }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           build-args: |
             APP=${{ matrix.app }}
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+            VITE_SITE_INDEXABLE=${{ needs.plan.outputs.environment == 'production' }}
             VITE_LANDING_URL=https://${{ steps.config.outputs.domain }}
             VITE_ADMIN_URL=https://admin.${{ steps.config.outputs.domain }}
             VITE_CLIENT_URL=https://client.${{ steps.config.outputs.domain }}

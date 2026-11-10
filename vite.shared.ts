@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 
 const root = dirname(fileURLToPath(import.meta.url));
 
@@ -28,13 +28,20 @@ function pdfWorkerPlugin(appRoot: string): Plugin {
 
 export function createAppConfig(configUrl: string) {
   const appRoot = dirname(fileURLToPath(configUrl));
-  return defineConfig({
-    root: appRoot,
-    envDir: appRoot,
-    publicDir: resolve(appRoot, "public"),
-    plugins: [tanstackRouter({ target: "react", routesDirectory: resolve(appRoot, "src/routes"), generatedRouteTree: resolve(appRoot, "src/routeTree.gen.ts"), autoCodeSplitting: false }), react(), ...(basename(appRoot) === "admin" ? [pdfWorkerPlugin(appRoot)] : [])],
-    css: { postcss: resolve(root, "packages/ui") },
-    resolve: { dedupe: ["react", "react-dom", "@tanstack/react-router"] },
-    build: { outDir: "dist", emptyOutDir: true },
+  return defineConfig(({ mode }) => {
+    // Local-only proxy: the browser still calls its own origin at /api/v1/.
+    const { API_PROXY_TARGET } = loadEnv(mode, appRoot, "API_PROXY_");
+    const proxy = API_PROXY_TARGET ? { "/api/v1": { target: API_PROXY_TARGET, changeOrigin: true } } : undefined;
+    return {
+      root: appRoot,
+      envDir: appRoot,
+      publicDir: resolve(appRoot, "public"),
+      plugins: [tanstackRouter({ target: "react", routesDirectory: resolve(appRoot, "src/routes"), generatedRouteTree: resolve(appRoot, "src/routeTree.gen.ts"), autoCodeSplitting: false }), react(), ...(basename(appRoot) === "admin" ? [pdfWorkerPlugin(appRoot)] : [])],
+      css: { postcss: resolve(root, "packages/ui") },
+      resolve: { dedupe: ["react", "react-dom", "@tanstack/react-router"] },
+      build: { outDir: "dist", emptyOutDir: true },
+      server: { proxy },
+      preview: { proxy },
+    };
   });
 }

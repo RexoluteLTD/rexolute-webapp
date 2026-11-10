@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from "./routes/index";
 import { Route as AboutUsRouteImport } from "./routes/about-us";
 import { Route as ContactUsRouteImport } from "./routes/contact-us";
 import { Route as HomeRouteImport } from "./routes/home";
+import { Route as PolicyRouteImport } from "./routes/policy";
+import { Route as PrivacyRouteImport } from "./routes/privacy";
 import { Route as TermsConditionRouteImport } from "./routes/terms-condition";
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +37,16 @@ const HomeRoute = HomeRouteImport.update({
   path: "/home",
   getParentRoute: () => rootRouteImport,
 } as any);
+const PolicyRoute = PolicyRouteImport.update({
+  id: "/policy",
+  path: "/policy",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: "/privacy",
+  path: "/privacy",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const TermsConditionRoute = TermsConditionRouteImport.update({
   id: "/terms-condition",
   path: "/terms-condition",
@@ -46,6 +58,8 @@ export interface FileRoutesByFullPath {
   "/about-us": typeof AboutUsRoute;
   "/contact-us": typeof ContactUsRoute;
   "/home": typeof HomeRoute;
+  "/policy": typeof PolicyRoute;
+  "/privacy": typeof PrivacyRoute;
   "/terms-condition": typeof TermsConditionRoute;
 }
 export interface FileRoutesByTo {
@@ -53,6 +67,8 @@ export interface FileRoutesByTo {
   "/about-us": typeof AboutUsRoute;
   "/contact-us": typeof ContactUsRoute;
   "/home": typeof HomeRoute;
+  "/policy": typeof PolicyRoute;
+  "/privacy": typeof PrivacyRoute;
   "/terms-condition": typeof TermsConditionRoute;
 }
 export interface FileRoutesById {
@@ -61,19 +77,37 @@ export interface FileRoutesById {
   "/about-us": typeof AboutUsRoute;
   "/contact-us": typeof ContactUsRoute;
   "/home": typeof HomeRoute;
+  "/policy": typeof PolicyRoute;
+  "/privacy": typeof PrivacyRoute;
   "/terms-condition": typeof TermsConditionRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/about-us" | "/contact-us" | "/home" | "/terms-condition";
+  fullPaths:
+    | "/"
+    | "/about-us"
+    | "/contact-us"
+    | "/home"
+    | "/policy"
+    | "/privacy"
+    | "/terms-condition";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/about-us" | "/contact-us" | "/home" | "/terms-condition";
+  to:
+    | "/"
+    | "/about-us"
+    | "/contact-us"
+    | "/home"
+    | "/policy"
+    | "/privacy"
+    | "/terms-condition";
   id:
     | "__root__"
     | "/"
     | "/about-us"
     | "/contact-us"
     | "/home"
+    | "/policy"
+    | "/privacy"
     | "/terms-condition";
   fileRoutesById: FileRoutesById;
 }
@@ -82,6 +116,8 @@ export interface RootRouteChildren {
   AboutUsRoute: typeof AboutUsRoute;
   ContactUsRoute: typeof ContactUsRoute;
   HomeRoute: typeof HomeRoute;
+  PolicyRoute: typeof PolicyRoute;
+  PrivacyRoute: typeof PrivacyRoute;
   TermsConditionRoute: typeof TermsConditionRoute;
 }
 
@@ -115,6 +151,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof HomeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/policy": {
+      id: "/policy";
+      path: "/policy";
+      fullPath: "/policy";
+      preLoaderRoute: typeof PolicyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/privacy": {
+      id: "/privacy";
+      path: "/privacy";
+      fullPath: "/privacy";
+      preLoaderRoute: typeof PrivacyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/terms-condition": {
       id: "/terms-condition";
       path: "/terms-condition";
@@ -130,6 +180,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutUsRoute: AboutUsRoute,
   ContactUsRoute: ContactUsRoute,
   HomeRoute: HomeRoute,
+  PolicyRoute: PolicyRoute,
+  PrivacyRoute: PrivacyRoute,
   TermsConditionRoute: TermsConditionRoute,
 };
 export const routeTree = rootRouteImport

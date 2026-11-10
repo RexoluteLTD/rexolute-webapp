@@ -1,9 +1,8 @@
 import axios from "axios";
 
-// VITE_API_BASE_URL is the backend origin; /api is appended exactly once.
-const origin = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+// Resolve against the current app origin; Traefik forwards this prefix to the backend.
 export const publicApi = axios.create({
-  baseURL: origin.endsWith("/api") ? origin : `${origin}/api`,
+  baseURL: "/api/v1/",
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });

@@ -22,7 +22,7 @@ Use Node 22.12+ (22.x) and Yarn 1.22.22.
 cp apps/landing/.env.example apps/landing/.env.local
 cp apps/admin/.env.example apps/admin/.env.local
 cp apps/client/.env.example apps/client/.env.local
-# Configure the values in each app; admin/client need their backend origin.
+# Configure each app; API_PROXY_TARGET is optional for local API access.
 yarn install
 yarn dev
 ```
@@ -36,7 +36,7 @@ yarn test
 yarn build
 ```
 
-`yarn build` uses Turborepo to generate routes, typecheck each app (including its imported shared packages), and build the three apps in parallel. `yarn build:admin` (or `build:landing` / `build:client`) generates, typechecks, and builds only that app. Run `yarn typecheck` for the additional repository-wide configuration and package check. Direct workspace build commands run Vite alone. `yarn preview:landing`, `yarn preview:admin`, and `yarn preview:client` serve previously built apps.
+`yarn build` uses Turborepo to generate routes, typecheck each app (including its imported shared packages), and build the three apps in parallel. `yarn build:admin` (or `build:landing` / `build:client`) generates, typechecks, and builds only that app. Run `yarn typecheck` for the additional repository-wide configuration and package check. Direct workspace builds skip Turbo's typecheck gate; landing still runs its prerender step. `yarn preview:landing`, `yarn preview:admin`, and `yarn preview:client` serve previously built apps.
 
 ## Turborepo tasks and caching
 
@@ -104,34 +104,48 @@ Vite loads environment files from the app directory (`apps/landing`, `apps/admin
 
 Only `.env.example` templates are versioned. Actual environment files are ignored by Git and excluded from Docker at every directory depth. App files always stay outside `public/`. Docker builds continue to receive public build-time values through build arguments; they do not copy your local environment files.
 
-`VITE_API_BASE_URL` is the public backend origin, optionally ending in `/api`. The transport appends `/api` only when needed. An empty value uses same-origin `/api`; local development therefore requires a backend origin unless you configure a reverse proxy yourself. All `VITE_*` values are public build-time values, never secrets. Old `NEXT_PUBLIC_*`, `NEXTAUTH_*`, and `APP_*` values are no longer used by application code.
+`@rexolute/api` always uses the root-relative base `/api/v1/`. Both public/authentication and authenticated requests stay on the current app domain: for example, admin at `https://admin.example.co` calls `https://admin.example.co/api/v1/auth/signin`. Traefik routes that prefix to the backend container; it is excluded from the frontend router. No separate backend origin or browser CORS configuration is required for these same-origin requests. `VITE_API_BASE_URL` and old `NEXT_PUBLIC_*`, `NEXTAUTH_*`, and `APP_*` values are no longer used.
+
+For local Vite development/preview without Traefik, set `API_PROXY_TARGET=http://localhost:8080` in the app's `.env.local`. Vite forwards `/api/v1/` requests to that server while preserving the path; the browser still uses its app origin. This variable is server-only, is not bundled into browser code, and is not required for deployed Docker images. Remove it if local Traefik already handles routing. All `VITE_*` values remain public build-time values, never secrets.
 
 The shared auth client uses the existing backend contract:
 
-1. `POST /api/auth/signin` with `{ email, password }`.
-2. `POST /api/auth/verify-otp?mode=token` with `{ provider, payload: { identity, code } }`.
+1. `POST /api/v1/auth/signin` with `{ email, password }`.
+2. `POST /api/v1/auth/verify-otp?mode=token` with `{ provider, payload: { identity, code } }`.
 3. Read `data.access_token` and `data.refresh_token`; use access-token claims for frontend navigation.
-4. Refresh through `POST /api/auth/refresh-token` with a bearer refresh token. Concurrent requests share one refresh operation.
+4. Refresh through `POST /api/v1/auth/refresh-token` with a bearer refresh token. Concurrent requests share one refresh operation.
 5. Add the access token to authenticated API calls. A 401 clears the local session and protected routes return to the relevant app login.
 
-Sessions use memory and tab-scoped `sessionStorage`, replacing the former NextAuth HTTP-only cookie. This is a deliberate architectural difference: browser scripts can access these tokens. A backend-managed HTTP-only cookie/BFF flow requires backend work and should replace browser token storage if that is the production security requirement. Never rely on decoded browser claims or route guards for authorization; every backend endpoint must validate the token and enforce role/permissions. Configure backend CORS for each deployed app origin and allow the Authorization header.
+Sessions use memory and tab-scoped `sessionStorage`, replacing the former NextAuth HTTP-only cookie. This is a deliberate architectural difference: browser scripts can access these tokens. A backend-managed HTTP-only cookie/BFF flow requires backend work and should replace browser token storage if that is the production security requirement. Never rely on decoded browser claims or route guards for authorization; every backend endpoint must validate the token and enforce role/permissions. Traefik must forward Authorization headers to the backend on the same app origin.
 
 Login return paths accept local root-relative URLs only and reject external or protocol-relative destinations. No browser API exists to overwrite session roles or permissions. Logout clears the current tab's tokens; backend revocation and cross-tab/session-wide logout are not implemented. Admin and client logins require matching backend roles. Client login assumes the same credential/OTP contract as admin; verify that contract against your backend before enabling it for users.
 
 ## Feature status carried over from the original app
 
-This migration preserves existing screen implementations, not completion of unfinished product features. Most admin statistics/tables, session management actions, access management, marketing contact submission, password recovery, OTP resend, and PIN/password setup still contain placeholder behavior. Therapist approval now calls its parent handler; the existing verification context handoff still does not survive reload/deep-linking. Client dashboard functionality remains planned.
+This migration preserves existing screen implementations, not completion of unfinished product features. Most admin statistics/tables, session management actions, access management, password recovery, OTP resend, and PIN/password setup still contain placeholder behavior. Therapist approval now calls its parent handler; the existing verification context handoff still does not survive reload/deep-linking. Client dashboard functionality remains planned.
+
+
+## Landing accessibility, responsive layout, and SEO
+
+Landing uses app-scoped CSS in `apps/landing/src/landing.css`; shared dashboard styles are unchanged. Layouts reflow down to 320 CSS pixels with responsive grids and image dimensions. Navigation includes a keyboard-operable mobile disclosure, Escape handling, active-page indicators, a skip link, and focus on the main region after route changes. Inputs have explicit labels, autocomplete hints, native required/email validation, and a live status message. Reduced-motion preferences are respected.
+
+The contact form prepares a `mailto:hello@example.co` draft in the visitor's email app. It does not send a request to the API, claim that a message was sent, or persist form values. Sending requires an email app and the visitor's confirmation; a direct email link remains available. This is not a backend enquiry service.
+
+`yarn build:landing` runs Vite, then `apps/landing/scripts/prerender.mjs` renders all six public pages and a 404 page using the existing TanStack route tree. The resulting HTML includes visible content before JavaScript, unique titles/descriptions, canonical URLs, Open Graph/Twitter metadata, and Organization/WebSite JSON-LD. React hydrates that content for navigation and the contact/menu interactions. The app marks the router as hydrating static content to preserve matching server/client Suspense boundaries; these routes currently have no loader data. If loaders are introduced, add TanStack's data dehydration/hydration flow rather than treating loader data as static. The temporary server bundle is removed and is never deployed; hosting remains static Nginx. `/home` redirects permanently to `/` in the landing Nginx configuration.
+
+Set `VITE_LANDING_URL` to the actual site origin. `VITE_SITE_INDEXABLE=true` explicitly enables production indexing and adds the home, about and contact URLs to `sitemap.xml`; the default is `false`, which emits noindex metadata and a disallowing `robots.txt`. CI enables indexing only for the production environment. Privacy, cookie policy and terms pages contain tailored introductory copy and remain noindex until business/legal review confirms the organization details, operational data handling and service terms. They do not claim to be complete, jurisdiction-specific therapy agreements. Do not add invented testimonials, staff credentials, ratings, or clinical outcomes to visible copy or structured data.
+
+When adding a public page, update `publicPaths` and metadata in `apps/landing/src/lib/seo.ts` as well as the file route. Confirm prerendered HTML, metadata, sitemap membership, hydration, and Nginx status codes. Other static hosts must map clean URLs to the generated `.html` files and use `404.html` with HTTP 404 rather than an SPA fallback.
 
 ## Static deployment
 
-Deploy each app's `dist` directory to a separate origin. Configure a history fallback to `index.html` so direct links work; keep missing static assets and `/api` requests out of that fallback. Landing pages are client-rendered SPAs; prerendering/SSR for marketing SEO is a separate follow-up.
+Deploy each app's `dist` directory to a separate origin. Admin/client use `deploy/nginx.conf` with a history fallback to `index.html`. Landing uses `deploy/nginx.landing.conf` to serve prerendered route HTML and return a real HTTP 404 for unknown URLs. The Dockerfile selects the correct configuration for `APP`. Both keep `/api` requests out of the frontend fallback.
 
 A static Nginx container template is provided in `deploy/`:
 
 ```sh
 docker build -f deploy/Dockerfile \
   --build-arg APP=admin \
-  --build-arg VITE_API_BASE_URL=https://api.example.com \
   --build-arg VITE_LANDING_URL=https://example.com \
   --build-arg VITE_ADMIN_URL=https://admin.example.com \
   --build-arg VITE_CLIENT_URL=https://client.example.com \
@@ -139,7 +153,7 @@ docker build -f deploy/Dockerfile \
 docker run --rm -p 8080:80 rexolute-admin
 ```
 
-Use `APP=landing` or `APP=client` for the other apps. Environment values must be supplied at build time. `.dockerignore` excludes local env files, dependencies, and old build output.
+Use `APP=landing` or `APP=client` for the other apps. For an indexable production landing image, also pass `--build-arg VITE_SITE_INDEXABLE=true`. Environment values must be supplied at build time. `.dockerignore` excludes local env files, dependencies, and old build output.
 
 The obsolete root Next.js Dockerfile and Compose draft have been removed. `deploy/Dockerfile`, `deploy/compose.yml`, and `.github/workflows/deploy.yml` are the supported deployment path.
 
@@ -155,17 +169,17 @@ The obsolete root Next.js Dockerfile and Compose draft have been removed. `deplo
 
 Create both GitHub environments and configure the following in each:
 
-- Variables: `BASE_DOMAIN` (bare domain, without `https://`; use the same base in both environments), `VITE_API_BASE_URL` (the environment's HTTPS backend URL).
+- Variables: `BASE_DOMAIN` (bare domain, without `https://`; use the same base in both environments).
 - Optional variables: `TRAEFIK_NETWORK` (defaults to `localhost`), `GHCR_USER` (defaults to the repository owner).
 - Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, and `CR_PAT` (a registry token with permission to pull the repository's GHCR packages).
 
-The workflow publishes with `GITHUB_TOKEN`. The deployment user needs Bash, Docker, and Docker Compose v2 with `up --wait` support, permission to use Docker, and write access to `/var/apps/rexolute`. Provision the external Traefik network and a running Traefik instance with the `websecure` entrypoint and TLS certificates for every hostname above. Point DNS at the corresponding VPS; production and development can use the same VPS or different environment-specific hosts. The generated rules cover the listed hostnames; `www` aliases require additional routing/DNS configuration. Configure backend CORS to allow the matching frontend origins. No local app `.env` files or backend secrets are uploaded.
+The workflow publishes with `GITHUB_TOKEN`. The deployment user needs Bash, Docker, and Docker Compose v2 with `up --wait` support, permission to use Docker, and write access to `/var/apps/rexolute`. Provision the external Traefik network and a running Traefik instance with the `websecure` entrypoint and TLS certificates for every hostname above. Point DNS at the corresponding VPS; production and development can use the same VPS or different environment-specific hosts. The generated rules cover the listed hostnames; `www` aliases require additional routing/DNS configuration. The VPS backend Traefik routers must match `/api/v1/` on each app hostname and forward requests to the correct production/development backend container. The frontend router excludes `/api/` so it cannot intercept those requests. Any prefix stripping required by the backend belongs in its existing Traefik middleware. Nginx retains an API 404 fallback for requests incorrectly sent directly to the static container. No local app `.env` files or backend secrets are uploaded.
 
 Deployments follow these steps:
 
 1. Compare the current commit against the **last successful deployment on the same branch**. The first release, unavailable/non-ancestor history, and manual `force_all` runs select every app. Using the last successful release includes changes from failed deployments.
 2. Select changed apps plus consumers of changed workspace packages, following transitive dependencies. App source/public changes select that app; API/auth select admin/client; shared UI and root tooling/deployment changes select all consumers. Documentation-only changes do not build images. Renames/deletions are included.
-3. Run reusable CI checks (lint, repository typecheck, application tests and deployment-script tests). Publish only selected apps as separate GHCR images, supplying all four public Vite build values. Docker builds typecheck/build only their selected app. Docker layer caches are scoped by environment and app.
+3. Run reusable CI checks (lint, repository typecheck, application tests and deployment-script tests). Publish only selected apps as separate GHCR images, supplying the three public app-origin Vite build values and `VITE_SITE_INDEXABLE` (`true` only for production). Docker builds typecheck/build only their selected app. Docker layer caches are scoped by environment and app.
 4. Deploy the exact published image **digest**, rather than a mutable `latest` tag. A branch-level concurrency queue serializes releases without interrupting SSH deployments; a branch-head check rejects superseded commits before uploading. GitHub's latest pending run includes accumulated changes since the last successful release.
 5. Start only selected apps with independent Compose projects and Traefik router names (`rexolute-production-admin`, etc.). Nginx serves port 80. Compose waits for the image's HTTP health check. A failed update attempts to restore that app's previous healthy manifest/digest and fails the workflow; first-time failures have no previous release to restore. Earlier healthy apps in the same release remain updated and the next run retries changes since the last fully successful release.
 

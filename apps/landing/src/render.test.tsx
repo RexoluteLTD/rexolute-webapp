@@ -1,10 +1,12 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { createMemoryHistory, RouterProvider } from "@tanstack/react-router";
+import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { router } from "./router";
+import { routeTree } from "./routeTree.gen";
+const makeRouter = () => createRouter({ routeTree, history: createMemoryHistory({ initialEntries: ["/"] }) });
+let router = makeRouter();
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-beforeEach(() => { vi.spyOn(window, "scrollTo").mockImplementation(() => {}); });
+beforeEach(() => { router = makeRouter(); vi.spyOn(window, "scrollTo").mockImplementation(() => {}); });
 let unmount: (() => void) | undefined;
 afterEach(async () => { await act(async () => unmount?.()); document.body.innerHTML = ""; });
 it("renders landing through its generated route tree", async () => {
@@ -15,4 +17,42 @@ it("renders landing through its generated route tree", async () => {
   router.update({ history: createMemoryHistory({ initialEntries: ["/"] }) });
   await act(async () => { await router.load(); root.render(<RouterProvider router={router} />); });
   await vi.waitFor(() => expect(container.textContent).toContain("Starts Here"));
+});
+
+it("offers a keyboard-accessible mobile menu and restores focus on Escape", async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  unmount = () => root.unmount();
+  router.update({ history: createMemoryHistory({ initialEntries: ["/"] }) });
+  await act(async () => { await router.load(); root.render(<RouterProvider router={router} />); });
+  const button = container.querySelector<HTMLButtonElement>("button[aria-controls='mobile-navigation']")!;
+  const menu = container.querySelector<HTMLElement>("#mobile-navigation")!;
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  expect(menu.hidden).toBe(true);
+  await act(async () => button.click());
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  expect(menu.hidden).toBe(false);
+  await act(async () => { menu.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+  expect(menu.hidden).toBe(true);
+  expect(document.activeElement).toBe(button);
+});
+it("updates route metadata, has one main and H1, and labels contact fields", async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  unmount = () => root.unmount();
+  router.update({ history: createMemoryHistory({ initialEntries: ["/"] }) });
+  await act(async () => { await router.load(); root.render(<RouterProvider router={router} />); });
+  await act(async () => { await router.navigate({ to: "/contact-us" }); });
+  expect(document.title).toContain("Contact Rexolute");
+  expect(document.head.querySelectorAll('meta[name="description"]').length).toBe(1);
+  expect(document.head.querySelectorAll('link[rel="canonical"]').length).toBe(1);
+  expect(container.querySelectorAll("main").length).toBe(1);
+  expect(container.querySelectorAll("h1").length).toBe(1);
+  for (const input of container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input,textarea")) expect(input.labels?.length).toBe(1);
+  expect(container.querySelector("form")?.getAttribute("action")).toBe("mailto:hello@example.co");
+  expect(container.querySelector("form")?.getAttribute("method")).toBe("post");
+  expect(document.activeElement?.id).toBe("main-content");
+  expect(container.querySelector('a[href="mailto:hello@example.co"]')).not.toBeNull();
 });

@@ -1,124 +1,19 @@
-import React, { Fragment } from "react";
-import { useRouter } from "@tanstack/react-router";
-import Head from "@rexolute/ui/head";
+import { Link } from "@tanstack/react-router";
 
-const Page = () => {
-  const router = useRouter();
-
-  return (
-    <Fragment>
-      <Head title="About us" />
-
-      <section>
-        <div className="container">
-          <div className="py-16">
-            <div className="max-w-3xl mx-auto text-center py-12 px-6">
-              <h1 className="text-5xl font-extrabold mb-6">About Rexolute</h1>
-              <p className="text-gray-700 leading-relaxed space-y-4">
-                Lorem ipsum dolor sit amet consectetur. Proin elit facilisis
-                etiam facilisis cursus cursus mattis a. Nec egestas vitae semper
-                auctor. Orci mi iaculis mauris ultricies felis velit. Nullam
-                massa faucibus aenean malesuada non sed tempor. Et consectetur
-                elit odio interdum nisl arcu cursus habitasse. Nam non aliquam
-                lectus lobortis elit nibh. Elit cursus scelerisque nec euismod
-                eu. Morbi vitae nulla pellentesque enim maecenas dui.
-              </p>
-            </div>
-            <div className="max-w-6xl mx-auto px-6 my-12">
-              <img
-                src="/images/about-1.webp"
-                alt="About Rexolute"
-                className="w-full rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="flex gap-8 my-8">
-              <div className="flex-1">
-                <p className="text-[#AD8616]">OUR VISION</p>
-                <h2 className="font-bold text-2xl font-berlin">
-                  We are here to help the customers to get their success.
-                </h2>
-              </div>
-              <div className="flex-1">
-                <p>
-                  We share common trends and strategies for improving your
-                  rental income and making sure you stay in high demand of
-                  service.{" "}
-                </p>
-                <p>
-                  With lots of unique blocks, you can easily build a page
-                  without coding. Build your next landing page. With lots of
-                  unique blocks, you can easily build a page without coding any
-                  other page.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="w-full bg-[#2E8902]  ">
-        <div className="container">
-          <div className="py-16">
-            <div className="lg:max-w-[600px] text-center mx-auto">
-              <h1 className="text-5xl  text-white font-extrabold mb-6">
-                Executive Leadership
-              </h1>
-              <p className="text-[#ffffff] leading-relaxed space-y-4">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              </p>
-            </div>
-
-            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center ">
-              {/* Team Member 1 */}
-              <div className="text-center">
-                <img
-                  src="/images/executives/whatever-happens-im-ready-to-face-it.jpg"
-                  alt="Team Member 1"
-                  className="w-42 h-42 rounded-md object-cover mx-auto mb-4"
-                />
-                <p className="text-white font-semibold">Dr. Jane Smith</p>
-                <p className="text-gray-300 text-sm">Lead Therapist</p>
-              </div>
-
-              {/* Team Member 2 */}
-              <div className="text-center">
-                <img
-                  src="/images/executives/well-im-not-in-the-mood-for-any-jokes-today.jpg"
-                  alt="Team Member 2"
-                  className="w-42 h-42 rounded-md object-cover mx-auto mb-4"
-                />
-                <p className="text-white font-semibold">Mr. John Doe</p>
-                <p className="text-gray-300 text-sm">Cognitive Specialist</p>
-              </div>
-
-              {/* Team Member 3 */}
-              <div className="text-center">
-                <img
-                  src="/images/executives/ready-for-a-date.jpg"
-                  alt="Team Member 3"
-                  className="w-42 h-42 rounded-md object-cover mx-auto mb-4"
-                />
-                <p className="text-white font-semibold">Dr. Emily Rose</p>
-                <p className="text-gray-300 text-sm">Child Psychologist</p>
-              </div>
-
-              {/* Team Member 4 */}
-              <div className="text-center">
-                <img
-                  src="/images/executives/looking-at-the-day-ahead.jpg"
-                  alt="Team Member 4"
-                  className="w-42 h-42 rounded-md object-cover mx-auto mb-4"
-                />
-                <p className="text-white font-semibold">Mr. Mark Lee</p>
-                <p className="text-gray-300 text-sm">Family Counselor</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </Fragment>
-  );
-};
-
-export default Page;
+export default function AboutPage() {
+  return <>
+    <section className="landing-section" aria-labelledby="about-title">
+      <div className="landing-container">
+        <div className="page-intro"><p className="eyebrow">OUR PURPOSE</p><h1 id="about-title">About Rexolute</h1><p>We believe taking care of your mind deserves a place in everyday life. Rexolute brings therapy and mental wellness into a space that feels easier to approach.</p></div>
+        <img src="/images/about-1.webp" alt="" width={2400} height={1098} className="about-image" fetchPriority="high" />
+        <div className="split-layout vision-layout"><div><p className="eyebrow">OUR VISION</p><h2>More room to be yourself. More ways to move forward.</h2></div><div className="prose-copy"><p>Asking for support can feel like a big step. We want to make the beginning less daunting, whether you are exploring therapy for the first time or returning with new goals.</p><p>Our focus is on meaningful conversations, individual experiences, and helping people find support that fits their lives. There is no single story of mental wellness, and no one pace you need to follow.</p></div></div>
+      </div>
+    </section>
+    <section className="landing-section green-section" aria-labelledby="values-title"><div className="landing-container"><div className="section-heading"><h2 id="values-title">What guides us</h2><p>A thoughtful approach to the very human experience of asking for help.</p></div><div className="values-grid">{[
+      { title: "Listening first", text: "Your experiences and goals are the starting point for a conversation about support." },
+      { title: "Respect for individuality", text: "Background, identity, and life experience all shape what wellbeing means to each of us." },
+      { title: "Space to reflect", text: "Understanding yourself takes time. Small steps and honest conversations have a place here." },
+      { title: "Connection with purpose", text: "Finding the right support starts with an approach that feels relevant to your needs." },
+    ].map(({ title, text }) => <article key={title}><h3>{title}</h3><p>{text}</p></article>)}</div><div className="section-heading about-cta"><Link to="/contact-us" className="landing-button button-light">Talk to our team</Link></div></div></section>
+  </>;
+}

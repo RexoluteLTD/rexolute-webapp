@@ -13,7 +13,10 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "API_PROXY_TARGET"
+      ]
     },
     "build": {
       "dependsOn": [
@@ -34,7 +37,10 @@
     },
     "preview": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "API_PROXY_TARGET"
+      ]
     },
     "//#lint:check": {
       "inputs": [
@@ -53,7 +59,8 @@
         "packages/ui/postcss.config.mjs",
         "apps/*/tsr.config.json",
         "scripts/**",
-        "!apps/*/src/routeTree.gen.ts"
+        "!apps/*/src/routeTree.gen.ts",
+        "apps/*/scripts/**"
       ],
       "outputs": []
     },

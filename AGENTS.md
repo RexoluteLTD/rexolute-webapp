@@ -4,7 +4,7 @@
 
 Rexolute is a Turborepo + Yarn Classic workspace monorepo using React 19, Vite, TypeScript (strict), Tailwind and TanStack Router. The former Next.js architecture was explicitly replaced. Do not reintroduce Next.js routes, server props, middleware, NextAuth, or next/image.
 
-- `apps/landing/src`: public marketing pages and layout.
+- `apps/landing/src`: public marketing pages and layout, app-scoped responsive CSS, SEO metadata, and static prerender entry.
 - `apps/admin/src`: admin routes, forms, dashboard and verification.
 - `apps/client/src`: client login and dashboard foundation.
 - `packages/ui/src`: reusable UI primitives, common components and global styles.
@@ -43,7 +43,7 @@ Reusable packages must never import app source or depend on app workspaces. UI m
 
 Vite's envDir and publicDir resolve inside each app. Keep `.env`, `.env.local`, and mode-specific environment files in the app directory, outside public/. Do not restore root environment/public directories. Preserve local override precedence, never print environment values, and never put secrets in VITE_* variables. Actual env files must stay ignored by Git and Docker; Docker uses explicit public build arguments. App build tasks must hash their own public/** and ignored .env* files rather than treating them as global inputs.
 
-`VITE_API_BASE_URL` is the public backend origin (with or without /api). `VITE_LANDING_URL`, `VITE_ADMIN_URL` and `VITE_CLIENT_URL` configure cross-app URLs. Only public values may use VITE_ prefixes.
+API clients always use root-relative `/api/v1/` on the current app origin. Do not restore a separate browser backend origin or `VITE_API_BASE_URL`. The VPS Traefik backend router owns that prefix on each app hostname; frontend rules exclude `/api/`. For local Vite dev/preview, optional app-local `API_PROXY_TARGET` configures a server-only proxy preserving `/api/v1/`. `VITE_LANDING_URL`, `VITE_ADMIN_URL` and `VITE_CLIENT_URL` configure cross-app URLs. Only public values may use VITE_ prefixes.
 
 `packages/api/src/transport.ts` supplies the unauthenticated client. `packages/api/src/axios.ts` supplies the authenticated singleton with interceptors installed once. `packages/api/src/session.ts` owns token parsing, tab-scoped persistence and refresh concurrency; `packages/auth/src/provider.tsx` exposes reactive state; `packages/auth/src/guard.tsx` protects browser navigation. Do not add competing interceptor or refresh implementations. API errors use `parseAxiosError`.
 
@@ -71,3 +71,7 @@ Run appropriate checks before handoff and report gaps honestly. Do not suppress 
 ## Known limits
 
 Many existing admin screens and recovery/PIN flows still use sample data or placeholder actions. The client dashboard is a foundation for future work. See README.md for feature status and deployment instructions. Deployment uses .github/workflows/deploy.yml and deploy/ templates. main targets production; dev targets development. Only affected apps and consumers of changed packages are built/deployed; preserve independent app typecheck/build hashes. See README for GitHub environment setup, DNS, registry access, and initial cutover.
+
+## Landing app
+
+Landing builds prerender HTML through apps/landing/scripts/prerender.mjs and hydrates it in src/main.tsx. Register public paths and metadata in apps/landing/src/lib/seo.ts when adding routes. Keep static content available without JavaScript and unknown paths at HTTP 404 through deploy/nginx.landing.conf. VITE_SITE_INDEXABLE defaults false; only production CI opts in. Introductory legal pages remain noindex until reviewed. The contact form prepares an email to hello@example.co; do not claim backend delivery. Preserve the mobile menu, skip link, focus handling, explicit form labels, image dimensions, contrast and reduced-motion support. Scope marketing CSS to landing; do not alter dashboard styling.

@@ -1,127 +1,28 @@
-import Head from "@rexolute/ui/head";
-import { Fragment } from "react";
+import { useState, type FormEvent } from "react";
+import { Mail } from "lucide-react";
 
-const ContactPage = () => {
-  return (
-    <Fragment>
-      <Head title="Contact us" />
-
-      <section className="w-full bg-white ">
-        <div className="container">
-          <div className="py-12 ">
-            {/* Header/Navigation */}
-            <div className="text-center w-[600px] mx-auto">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Contact us
-              </h1>
-              <p className="text-lg text-gray-600">
-                Lorem ipsum dolor sit amet consectetur. Vell malesuodo placerat
-                sit gravida. Eu tincidunt urna idi. Etiam vitae odio magnis.
-              </p>
-            </div>
-
-            {/* Contact Content - Two Columns */}
-            <div className="flex my-12">
-              {/* Left Side - Contact Info */}
-              {/* Contact Information Section with Black Background */}
-              <div className="bg-black p-8 rounded-lg text-white">
-                <h2 className="text-2xl font-semibold mb-4">
-                  Contact Information
-                </h2>
-                <p className="text-gray-300 mb-6">
-                  Fill up the form and we will get back to you in few hours.
-                </p>
-                <div className="space-y-4">
-                  <p className="flex items-center gap-3">
-                    <span className="text-xl">📞</span> +29000009000
-                  </p>
-                  <p className="flex items-center gap-3">
-                    <span className="text-xl">✉️</span> hellosemail.com
-                  </p>
-                  <p className="flex items-center gap-3">
-                    <span className="text-xl">📍</span> 33, New York City,
-                    United States
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Side - Contact Form */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <form className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter first name"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter last name"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Email Field */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="Enter email"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-
-                    {/* Phone Field */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        placeholder="Enter phone no"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Message
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder="Enter message"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    Send message
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </Fragment>
-  );
-};
-
-export default ContactPage;
+export default function ContactPage() {
+  const [status, setStatus] = useState("");
+  function prepareEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const name = `${form.get("firstName")} ${form.get("lastName")}`.trim();
+    const body = `Name: ${name}\nEmail: ${form.get("email")}\nPhone: ${form.get("phone") || "Not provided"}\n\n${form.get("message")}`;
+    const mailto = `mailto:hello@example.co?subject=${encodeURIComponent(`Rexolute enquiry from ${name}`)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+    setStatus("Your email app has been requested. Review and send the draft there. If it does not open, email hello@example.co directly. Your message has not been sent by this website.");
+  }
+  return <section className="landing-section" aria-labelledby="contact-title"><div className="landing-container">
+    <div className="page-intro"><h1 id="contact-title">Contact us</h1><p>Have a question about Rexolute, getting started, or working with our team? We would like to hear from you.</p></div>
+    <div className="contact-grid">
+      <section className="contact-info" aria-labelledby="contact-info-title"><h2 id="contact-info-title">Let’s talk</h2><p>For questions about the platform, partnerships, or therapist enquiries, send our team an email.</p><a href="mailto:hello@example.co" className="contact-email"><Mail aria-hidden="true" size={24} /><span>hello@example.co</span></a><p>You can also use the form to prepare an email in your own email app.</p></section>
+      <form className="contact-form" action="mailto:hello@example.co" method="post" encType="text/plain" onSubmit={prepareEmail} aria-describedby="contact-help">
+        <h2>Write to our team</h2><p id="contact-help">All fields marked with * are required. This form opens your email app; messages are sent from there.</p>
+        <div className="form-row"><div><label htmlFor="first-name">First name *</label><input id="first-name" name="firstName" type="text" autoComplete="given-name" required maxLength={80} /></div><div><label htmlFor="last-name">Last name *</label><input id="last-name" name="lastName" type="text" autoComplete="family-name" required maxLength={80} /></div></div>
+        <div className="form-row"><div><label htmlFor="email">Email address *</label><input id="email" name="email" type="email" autoComplete="email" required maxLength={254} /></div><div><label htmlFor="phone">Phone number (optional)</label><input id="phone" name="phone" type="tel" autoComplete="tel" maxLength={40} /></div></div>
+        <div><label htmlFor="message">Message *</label><textarea id="message" name="message" rows={6} required maxLength={2000} /></div>
+        <button type="submit" className="landing-button">Prepare email</button><p role="status" aria-live="polite">{status}</p>
+      </form>
+    </div>
+  </div></section>;
+}
