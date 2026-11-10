@@ -1,280 +1,73 @@
 # AGENTS.md
 
-## Purpose
+## Architecture
 
-This file is the source of truth for AI agents working in the `rexolute` frontend. It documents how the app is structured, how to make safe changes, what to verify before shipping, and which areas need extra care because the current codebase contains transitional patterns and a few inconsistencies.
+Rexolute is a Turborepo + Yarn Classic workspace monorepo using React 19, Vite, TypeScript (strict), Tailwind and TanStack Router. The former Next.js architecture was explicitly replaced. Do not reintroduce Next.js routes, server props, middleware, NextAuth, or next/image.
 
-Use this guide before editing code. When in doubt, prefer the patterns already used in the nearest feature area instead of introducing a new abstraction.
+- `apps/landing/src`: public marketing pages and layout.
+- `apps/admin/src`: admin routes, forms, dashboard and verification.
+- `apps/client/src`: client login and dashboard foundation.
+- `packages/ui/src`: reusable UI primitives, common components and global styles.
+- `packages/ui/tailwind.config.ts` and `packages/ui/postcss.config.mjs`: shared styling configuration, exported by the UI package.
+- `packages/utils/src`: class merging, date/file helpers and app URLs.
+- `packages/api/src`: Axios clients, errors, token session service.
+- `packages/auth/src`: React auth context/provider and TanStack route guards.
+- `packages/assets/src`: brand image/SVG URL exports.
+- `packages/types/src`: shared UI and backend contracts.
+- `apps/admin/src/hooks` and `apps/client/src/hooks`: app-owned hooks.
+- `apps/*/public`: app-owned static assets, served at `/` and copied into that app's build.
+- `apps/*/.env*`: app-owned configuration; only `.env.example` templates are versioned.
+- `deploy`: Vite/static Nginx deployment templates.
 
-## Product And Stack
+## Conventions
 
-- Framework: Next.js `15.3.6`
-- Router: Pages Router (`src/pages`), not App Router
-- React: `19.2.0`
-- Language: TypeScript with `strict: true`
-- Styling: Tailwind CSS + custom shared UI primitives under `src/components/ui`
-- Auth: `next-auth` with credentials flow
-- Data fetching: `axios`
-- Forms: primarily `react-hook-form` + `zod`
-- Charts/tables: `recharts`, `@tanstack/react-table`
-- Package manager: Yarn Classic (`yarn@1.22.22`)
-- Node target: `22.x`
+Keep feature code inside its owning app. Import common code from its owning package (`@rexolute/ui/button`, `@rexolute/utils/cn`, `@rexolute/api`, `@rexolute/auth/provider`, `@rexolute/types`, etc.). Do not recreate a catch-all shared package. Reuse shared UI primitives and `cn()`; avoid adding another component library. Keep the established gray/green admin styling. Forms generally use react-hook-form with Zod and the existing error parser. Extend shared types rather than adding new untyped contracts. Avoid unrelated refactors.
 
-## Operating Principles
+Routes are file-based under each app's `src/routes/`. `__root.tsx` owns the root layout; `route.tsx` owns a folder layout/guard; `index.tsx` is a folder index; `$id.tsx` is a dynamic segment. `_authenticated/route.tsx` is pathless and protects its descendants; public login/OTP routes remain outside it. `src/router.tsx` only imports `src/routeTree.gen.ts` and creates the router. Add route files rather than manual createRoute/addChildren declarations.
 
-- Preserve the Pages Router architecture. Do not migrate routes to App Router unless explicitly requested.
-- Reuse existing shared UI components from `src/components/ui` before creating new primitives.
-- Keep route-specific logic close to the route unless multiple screens already share the same concern.
-- Match the current import convention: use the `@/` alias for files under `src`.
-- Prefer typed interfaces from `src/types` and extend them when needed instead of scattering inline `any`.
-- Avoid broad refactors during feature work unless the task explicitly includes cleanup.
+Do not edit generated route trees. Keep them under version control; the Vite plugin or `yarn routes:generate` regenerates them. Turbo generation tasks run before typechecking/tests and cache the trees as outputs. Generated files must remain excluded from lint and ordinary Turbo source inputs. App TypeScript projects and render tests stay isolated to avoid merging different apps' generated FileRoutesByPath declarations.
 
-## Repository Map
+ Use TanStack Link/navigation for internal navigation and `appUrls` plus normal anchors for cross-app links. Admin and client dashboards each render at `/` on their own origin, with public `/login`. Admin features use root paths such as `/users`, `/tasks`, and `/settings`; OTP/recovery paths are `/verify-otp`, `/forgot-password`, `/create-password`, and `/create-pin`. Do not reintroduce role prefixes or legacy role-specific auth aliases. Each app deploys to its own origin at the root. Static hosting needs an index.html fallback for deep links.
 
-### Core directories
+Shared code is a source workspace compiled by the apps. Root TypeScript configuration checks packages and root configuration files; the typecheck command then checks each app in a separate project. App-local aliases may be added only with matching TypeScript and Vite configuration; prefer relative imports within apps at present.
 
-- `src/pages`: all routes, including admin, auth, home, API routes, and error pages
-- `src/components/admin`: admin-specific layouts, forms, dashboard widgets, modals, and session flows
-- `src/components/home`: marketing/public-facing layout
-- `src/components/shared`: cross-cutting providers, wrappers, icons, head helpers, and shared context
-- `src/components/ui`: reusable UI primitives built on Radix and Tailwind
-- `src/lib/api`: axios client, interceptors, and API error parsing
-- `src/lib/utils`: utility helpers such as `cn` and date formatting
-- `src/assets`: global CSS, fonts, and static asset exports
-- `src/types`: shared application and auth types
-- `src/hooks`: custom hooks, including session-aware axios helpers and shared-layout state access
+Vite loads PostCSS from `packages/ui`; resolve Tailwind content globs relative to that package. Keep root copies of these config files removed, update Turbo global inputs if moving them, and declare styling build tools in the UI workspace.
 
-### High-impact files
+## Package ownership
 
-- `src/pages/_app.tsx`: global app shell, route-based layout selection, font CSS variables
-- `src/middleware.ts`: route protection for `/admin` and `/client`
-- `src/pages/api/auth/[...nextauth].ts`: NextAuth credentials provider and session/JWT shaping
-- `next.config.mjs`: rewrites, redirects, image behavior, build suppression, webpack fallbacks
-- `tailwind.config.ts`: theme tokens and container sizing
+Keep hooks in the app that consumes them. Admin owns mobile/toast/API-access/verification hooks and sidebar/toaster/document integration. Admin and client each own their `use-auth` adapter over the common auth context. Reusable UI component context helpers stay with their components.
 
-## Routing Model
+Reusable packages must never import app source or depend on app workspaces. UI may depend on utils/types, but must not depend on API/auth. API is React-free and owns token-session logic; auth depends on API for its React provider/guards. Declare every direct package dependency in the owning manifest. Domain constants and transient admin state stay in admin.
 
-The app uses filesystem routes under `src/pages` with custom rewrites:
+## Authentication and API
 
-- `/` rewrites to `/home`
-- non-admin/client/api/auth slugs rewrite into `/home/*`
-- `/admin/login` rewrites to `/auth/admin/login`
-- `/client/login` rewrites to `/auth/client/login`
+Vite's envDir and publicDir resolve inside each app. Keep `.env`, `.env.local`, and mode-specific environment files in the app directory, outside public/. Do not restore root environment/public directories. Preserve local override precedence, never print environment values, and never put secrets in VITE_* variables. Actual env files must stay ignored by Git and Docker; Docker uses explicit public build arguments. App build tasks must hash their own public/** and ignored .env* files rather than treating them as global inputs.
 
-Implications for agents:
+`VITE_API_BASE_URL` is the public backend origin (with or without /api). `VITE_LANDING_URL`, `VITE_ADMIN_URL` and `VITE_CLIENT_URL` configure cross-app URLs. Only public values may use VITE_ prefixes.
 
-- Public marketing pages usually belong under `src/pages/home/*`
-- Admin screens belong under `src/pages/admin/*`
-- Auth screens belong under `src/pages/auth/*`
-- Be careful when adding new top-level routes because `next.config.mjs` rewrites many unmatched paths into `/home`
+`packages/api/src/transport.ts` supplies the unauthenticated client. `packages/api/src/axios.ts` supplies the authenticated singleton with interceptors installed once. `packages/api/src/session.ts` owns token parsing, tab-scoped persistence and refresh concurrency; `packages/auth/src/provider.tsx` exposes reactive state; `packages/auth/src/guard.tsx` protects browser navigation. Do not add competing interceptor or refresh implementations. API errors use `parseAxiosError`.
 
-## Layout And Rendering Conventions
+Backend endpoints must enforce authorization; browser claims and route guards are not a security boundary. Browser sessionStorage replaces NextAuth cookies. A backend cookie/BFF migration is not yet implemented. Do not log passwords, OTPs, access tokens, refresh tokens, or sessions.
 
-`src/pages/_app.tsx` chooses layouts by route prefix:
+Transient SharedLayoutProvider handoffs live in `apps/admin/src/providers/layout-provider.tsx` for admin verification. They cannot replace URL identifiers and backend refetching when reload/deep-link support is required.
 
-- `/admin*` routes render inside `components/admin/layout/dashboard`
-- `/client*` routes rely on page/default layout behavior
-- `/home*` routes render inside `components/home/layout`
+## Commands and gates
 
-Important notes:
+Use Node 22.12+ (22.x) and Yarn 1.22.22, not npm or pnpm.
 
-- `SessionProvider` currently wraps admin and client routes only
-- `NoSSR` is used around admin/client/home layouts
-- Page-level `getLayout` is supported via `NextPageWithLayout`
+- `yarn install` (commit yarn.lock changes; CI uses --frozen-lockfile)
+- `yarn dev` or `yarn dev:landing`, `yarn dev:admin`, `yarn dev:client`
+- `yarn lint`
+- `yarn routes:generate` (generate each app route tree)
+- `yarn typecheck`
+- `yarn test`
+- `yarn build` (Turbo: generate/typecheck/build each app in parallel)
+- `yarn build:landing`, `yarn build:admin`, `yarn build:client` (filtered Turbo builds)
 
-When adding a page:
+Run appropriate checks before handoff and report gaps honestly. Do not suppress TypeScript/build failures. Test role guards, login failures, refresh behavior and deep links when changing auth/routing. The admin Vite plugin serves its matching installed PDF worker in dev and emits it into the admin build; never mutate shared source files from parallel build tasks.
 
-- Put the route in the correct folder so `_app.tsx` applies the expected layout
-- Use `getLayout` only when the feature already follows that pattern
-- Do not assume App Router features such as server components or route handlers
+`turbo.json` owns task scheduling and caching. Dev/preview tasks are persistent and uncached. Root `lint:check`, `typecheck:check`, and `test:check` tasks preserve repository-wide checks, including app render tests. Build caches declare dist outputs and account for shared source, public assets, root configuration, dotenv files and VITE_* environment values. Update task inputs/env/outputs when changing build dependencies; keep reusable packages source-only. Do not add app/shared workspace dependencies to the root manifest: Turbo includes root internal dependencies in global hashes, which invalidates unrelated apps. App typecheck tasks must depend on transitive workspace typecheck inputs so shared-source changes revalidate consumers.
 
-## Authentication And Authorization
+## Known limits
 
-Auth is handled with `next-auth` credentials login in `src/pages/api/auth/[...nextauth].ts`.
-
-Current behavior:
-
-- Provider id: `admin-auth`
-- OTP verification calls backend `/auth/verify-otp?mode=token`
-- Session strategy is JWT
-- Middleware protects `/admin` for `role === "admin"` and `/client` for `role === "client"`
-
-Agent guardrails:
-
-- If you add protected admin/client routes, confirm the route prefix matches middleware expectations
-- If you change session shape, update both NextAuth callbacks and any consuming types under `src/types`
-- If you touch token refresh logic, inspect both `src/pages/api/auth/[...nextauth].ts` and `src/hooks/use-axios-interceptor.tsx`
-
-## Data Fetching And API Conventions
-
-### Primary client
-
-- Shared axios instance: `src/lib/api/axios.ts`
-- Shared exports: `src/lib/api/index.ts`
-- Error normalization: `parseAxiosError` in `src/lib/api/error.ts`
-
-### Current caveats
-
-The repo contains more than one token-refresh approach:
-
-- `src/hooks/use-axios-interceptor.tsx` is the more React-aware pattern because it uses `useSession()` and `update()`
-- `src/lib/api/interceptor.ts` contains a separate interceptor setup path
-
-Preferred rule for new UI work:
-
-- Use `useAxiosInterceptors()` inside authenticated client components/pages that need API access
-- Reuse `parseAxiosError()` for user-facing failure handling
-- Keep backend endpoint strings close to the consuming feature unless a shared service module already exists
-
-Environment caveat:
-
-- `src/lib/api/axios.ts` uses `NEXT_PUBLIC_API_BASE_URL`
-- `src/hooks/use-axios-interceptor.tsx` refresh logic uses `NEXT_PUBLIC_API_URL`
-
-If you work in API/auth code, verify which env variable is actually intended before expanding the pattern.
-
-## Styling And UI Rules
-
-- Prefer Tailwind utility classes over ad hoc CSS files
-- Reuse primitives from `src/components/ui` first
-- Reuse `cn()` from `src/lib/utils/utils.ts` for class merging
-- Fonts are registered in `src/assets/fonts.ts` and exposed through CSS variables in `_app.tsx`
-- Keep admin UI visually consistent with the existing gray/green dashboard language unless the task explicitly redesigns it
-
-When creating new UI:
-
-- Follow the spacing and typography rhythm used in adjacent files
-- Prefer existing button, dialog, table, tabs, input, checkbox, and toast components
-- Avoid importing a second component library
-
-## Forms And Validation
-
-Common pattern:
-
-- `react-hook-form`
-- `zod`
-- `zodResolver`
-
-Preferred approach:
-
-- Define schema near the form component unless shared across multiple forms
-- Surface API errors through `setError("root", ...)` when appropriate
-- Keep client-side validation messages specific and short
-
-## Shared State And Cross-Page Handoffs
-
-Admin flows sometimes pass temporary state through `SharedLayoutProvider` in `src/components/shared/layout-provider.tsx` and access it via `useSharedData()`.
-
-Use this carefully:
-
-- It is suitable for transient admin flow handoffs
-- It is not a replacement for URL state, backend persistence, or React Query caching
-- If a screen must survive reloads or deep links, prefer route params or API refetching
-
-## Commands
-
-Use Yarn, not npm or pnpm.
-
-- Install: `yarn`
-- Dev: `yarn dev`
-- Build: `yarn build`
-- Start: `yarn start`
-- Lint: `yarn lint`
-
-Build note:
-
-- `copy-assets` runs before `dev` and `build` and copies `pdf.worker.min.js` into `public/`
-- Do not remove that step unless you also update the PDF/document viewer flow
-
-## Quality Gates
-
-Before finishing work, agents should do as many of these as the environment allows:
-
-1. Run `yarn lint`
-2. If the change affects routing, confirm the path is compatible with `next.config.mjs` rewrites and `src/middleware.ts`
-3. If the change affects authenticated screens, verify session/token usage still matches NextAuth callbacks
-4. If the change affects forms, test validation and submission error handling
-5. If the change affects shared UI primitives, review at least one existing consumer for regressions
-
-Current repo reality:
-
-- `next.config.mjs` sets `eslint.ignoreDuringBuilds = true`
-- `next.config.mjs` sets `typescript.ignoreBuildErrors = true`
-
-That means a successful build is not enough to prove code quality. Agents should not rely on `yarn build` alone as validation.
-
-## Environment Variables
-
-Check `.env.local` or deployment settings before changing environment-sensitive code. Based on the current repo, these are the important names to verify:
-
-- `APP_ENV`
-- `APP_PORT`
-- `APP_URL`
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
-- `NEXT_PUBLIC_API_BASE_URL`
-- `NEXT_PUBLIC_API_URL`
-
-Do not assume both API URL variables are interchangeable. Confirm usage before standardizing them.
-
-## Known Risks And Codebase Footguns
-
-- `README.md` currently contains unresolved merge conflict markers
-- Build-time lint and type failures are intentionally suppressed in `next.config.mjs`
-- There are duplicate/intermediate auth refresh patterns
-- Some pages and components still use `any` heavily
-- Some files use `"use client"` even though this is a Pages Router app; avoid cargo-culting directives unless needed for compatibility with a reused component
-- Rewrites are broad enough to hide routing mistakes during development
-- `src/middleware.ts` returns early after auth checks, leaving older subdomain logic unreachable
-
-Agents should mention these issues when relevant rather than silently deepening them.
-
-## Change Strategy For Agents
-
-### Safe default workflow
-
-1. Read the nearest route, layout, hook, and type definitions before editing
-2. Make the smallest coherent change that solves the task
-3. Reuse existing UI and utility patterns
-4. Update types when backend or session shapes change
-5. Run available checks and report any gaps honestly
-
-### When adding a new page
-
-1. Place it under the correct `src/pages` subtree
-2. Confirm `_app.tsx` gives it the intended layout
-3. Confirm `next.config.mjs` will not rewrite the route unexpectedly
-4. If protected, confirm middleware behavior
-
-### When touching auth or API code
-
-1. Check middleware, NextAuth callbacks, and axios interceptor usage together
-2. Verify which token and env variable names the flow expects
-3. Avoid introducing a third competing auth-refresh abstraction
-
-### When touching shared UI
-
-1. Prefer additive changes over breaking prop changes
-2. Search existing usages before renaming props or variants
-3. Keep visual changes scoped unless the task is a design-system update
-
-## Definition Of Done
-
-A change is ready when:
-
-- The implementation follows the existing Pages Router structure
-- Styling uses current shared patterns
-- Auth/routing behavior is still coherent
-- Types are updated where the data contract changed
-- Available checks were run, or the inability to run them was explicitly reported
-- Any known follow-up risk is called out clearly
-
-## Agent Handoff Notes
-
-When handing work to another agent, include:
-
-- What changed
-- Which routes/components were affected
-- Whether auth, rewrites, or shared providers were involved
-- Which checks were run
-- Any unresolved risk, especially around env vars, token refresh, or disabled build enforcement
+Many existing admin screens and recovery/PIN flows still use sample data or placeholder actions. The client dashboard is a foundation for future work. See README.md for feature status and deployment instructions. Deployment uses .github/workflows/deploy.yml and deploy/ templates. main targets production; dev targets development. Only affected apps and consumers of changed packages are built/deployed; preserve independent app typecheck/build hashes. See README for GitHub environment setup, DNS, registry access, and initial cutover.

@@ -1,0 +1,180 @@
+name: Deploy frontend
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: Rebuild all apps (also use after changing environment variables)
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  actions: read
+# Do not interrupt a remote deployment. Production and development have separate queues.
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.affected.outputs.apps }}
+      changed: ${{ steps.affected.outputs.changed }}
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: target
+        run: |
+          if [ "$GITHUB_REF_NAME" = main ]; then
+            echo 'environment=production' >> "$GITHUB_OUTPUT"
+          else
+            echo 'environment=development' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Find last successful release on this branch
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE_ALL: ${{ inputs.force_all }}
+        run: |
+          set -euo pipefail
+          base=''
+          if [ "$FORCE_ALL" != true ]; then
+            base=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs" \
+              -f branch="$GITHUB_REF_NAME" -f status=success -f per_page=1 \
+              --jq '.workflow_runs[0].head_sha // empty')
+          fi
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+      - name: Select affected apps and dependent consumers
+        id: affected
+        env:
+          BASE_SHA: ${{ steps.baseline.outputs.sha }}
+        run: node scripts/affected-apps.mjs "$BASE_SHA"
+  checks:
+    needs: plan
+    uses: ./.github/workflows/checks.yml
+    with:
+      apps: ${{ needs.plan.outputs.apps }}
+      build: false
+  images:
+    needs: [plan, checks]
+    if: needs.plan.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.plan.outputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure public build values
+        id: config
+        env:
+          TARGET: ${{ needs.plan.outputs.environment }}
+          BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
+          API_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          : "${BASE_DOMAIN:?Set BASE_DOMAIN in the GitHub environment}"
+          : "${API_URL:?Set VITE_API_BASE_URL in the GitHub environment}"
+          [[ "$BASE_DOMAIN" =~ ^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$ ]]
+          [[ "$API_URL" =~ ^https://[^[:space:]]+$ ]]
+          domain="$BASE_DOMAIN"
+          if [ "$TARGET" = development ]; then domain="dev.$BASE_DOMAIN"; fi
+          echo "domain=$domain" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/${APP}" >> "$GITHUB_OUTPUT"
+        # APP is validated by the affected-app selector, not a freeform input.
+        # All VITE values below are public configuration.
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish selected app
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: ${{ steps.config.outputs.image }}:${{ needs.plan.outputs.environment }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          build-args: |
+            APP=${{ matrix.app }}
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+            VITE_LANDING_URL=https://${{ steps.config.outputs.domain }}
+            VITE_ADMIN_URL=https://admin.${{ steps.config.outputs.domain }}
+            VITE_CLIENT_URL=https://client.${{ steps.config.outputs.domain }}
+          cache-from: type=gha,scope=${{ needs.plan.outputs.environment }}-${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ needs.plan.outputs.environment }}-${{ matrix.app }}
+      - name: Record immutable release image
+        env:
+          IMAGE: ${{ steps.config.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+          APP: ${{ matrix.app }}
+        run: |
+          mkdir -p images
+          printf '%s@%s\n' "$IMAGE" "$DIGEST" > "images/$APP.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.app }}
+          path: images/*.txt
+          retention-days: 30
+    env:
+      APP: ${{ matrix.app }}
+  deploy:
+    needs: [plan, images]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.plan.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          merge-multiple: true
+          path: images
+      - name: Reject superseded commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" --jq .sha)
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo 'Branch advanced; the next workflow will deploy the accumulated changes.' >&2
+            exit 1
+          fi
+      - name: Upload release manifest and image digests
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: deploy/compose.yml,deploy/release.sh,images/*.txt
+          target: /var/apps/rexolute/${{ needs.plan.outputs.environment }}/releases/${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Deploy affected apps and verify health
+        uses: appleboy/ssh-action@v1
+        env:
+          TARGET: ${{ needs.plan.outputs.environment }}
+          RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
+          TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK || 'localhost' }}
+          REGISTRY_USER: ${{ vars.GHCR_USER || github.repository_owner }}
+          REGISTRY_PASSWORD: ${{ secrets.CR_PAT }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: TARGET,RELEASE_ID,BASE_DOMAIN,TRAEFIK_NETWORK,REGISTRY_USER,REGISTRY_PASSWORD
+          command_timeout: 15m
+          script: |
+            set -eu
+            bash "/var/apps/rexolute/$TARGET/releases/$RELEASE_ID/deploy/release.sh"

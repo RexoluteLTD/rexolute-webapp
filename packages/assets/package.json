@@ -1,0 +1,13 @@
+{
+  "name": "@rexolute/assets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./images": "./src/images.ts",
+    ".": "./src/index.ts",
+    "./svg": "./src/svg.ts"
+  },
+  "dependencies": {},
+  "sideEffects": false
+}

@@ -1,0 +1,53 @@
+name: Frontend checks
+on:
+  push:
+    branches-ignore: [main, dev]
+  pull_request:
+  workflow_call:
+    inputs:
+      apps:
+        type: string
+        required: true
+      build:
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('yarn.lock') }}-
+      - name: Select apps
+        id: affected
+        env:
+          REQUESTED_APPS: ${{ inputs.apps }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$REQUESTED_APPS" ]; then
+            echo "apps=$REQUESTED_APPS" >> "$GITHUB_OUTPUT"
+          else
+            node scripts/affected-apps.mjs "$BASE_SHA"
+          fi
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn test
+      # Deployment builds the selected apps inside Docker with environment-specific values.
+      - name: Build affected apps
+        if: inputs.apps == '' || inputs.build == true
+        env:
+          APPS: ${{ steps.affected.outputs.apps }}
+        run: node scripts/build-apps.mjs "$APPS"

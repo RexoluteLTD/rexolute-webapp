@@ -1,0 +1,133 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": [
+    "tsconfig.json",
+    "vite.shared.ts",
+    "packages/ui/tailwind.config.ts",
+    "packages/ui/postcss.config.mjs"
+  ],
+  "globalEnv": [
+    "VITE_*",
+    "NODE_ENV"
+  ],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": [
+        "^build",
+        "typecheck",
+        "routes:generate"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!src/routeTree.gen.ts",
+        "public/**",
+        ".env",
+        ".env.*"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "preview": {
+      "cache": false,
+      "persistent": true
+    },
+    "//#lint:check": {
+      "inputs": [
+        "apps/*/src/**",
+        "apps/*/tsconfig.json",
+        "apps/*/vite.config.ts",
+        "apps/*/package.json",
+        "packages/*/src/**",
+        "packages/*/tsconfig.json",
+        "packages/*/package.json",
+        "tsconfig.json",
+        "vite.shared.ts",
+        "packages/ui/tailwind.config.ts",
+        "vitest.config.ts",
+        "eslint.config.mjs",
+        "packages/ui/postcss.config.mjs",
+        "apps/*/tsr.config.json",
+        "scripts/**",
+        "!apps/*/src/routeTree.gen.ts"
+      ],
+      "outputs": []
+    },
+    "//#typecheck:check": {
+      "inputs": [
+        "apps/*/src/**",
+        "apps/*/tsconfig.json",
+        "apps/*/vite.config.ts",
+        "apps/*/package.json",
+        "packages/*/src/**",
+        "packages/*/tsconfig.json",
+        "packages/*/package.json",
+        "tsconfig.json",
+        "vite.shared.ts",
+        "packages/ui/tailwind.config.ts",
+        "vitest.config.ts",
+        "apps/*/tsr.config.json",
+        "scripts/**",
+        "!apps/*/src/routeTree.gen.ts"
+      ],
+      "outputs": [],
+      "dependsOn": [
+        "@rexolute/landing#routes:generate",
+        "@rexolute/admin#routes:generate",
+        "@rexolute/client#routes:generate"
+      ]
+    },
+    "//#test:check": {
+      "inputs": [
+        "apps/*/src/**",
+        "apps/*/tsconfig.json",
+        "apps/*/vite.config.ts",
+        "apps/*/package.json",
+        "packages/*/src/**",
+        "packages/*/tsconfig.json",
+        "packages/*/package.json",
+        "tsconfig.json",
+        "vite.shared.ts",
+        "packages/ui/tailwind.config.ts",
+        "vitest.config.ts",
+        "apps/*/tsr.config.json",
+        "scripts/**",
+        "!apps/*/src/routeTree.gen.ts",
+        "apps/*/.env",
+        "apps/*/.env.*"
+      ],
+      "outputs": [],
+      "dependsOn": [
+        "@rexolute/landing#routes:generate",
+        "@rexolute/admin#routes:generate",
+        "@rexolute/client#routes:generate"
+      ]
+    },
+    "routes:generate": {
+      "inputs": [
+        "src/routes/**",
+        "tsr.config.json",
+        "package.json",
+        "$TURBO_ROOT$/scripts/generate-routes.mjs"
+      ],
+      "outputs": [
+        "src/routeTree.gen.ts"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck",
+        "routes:generate"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!src/routeTree.gen.ts"
+      ],
+      "outputs": []
+    }
+  }
+}

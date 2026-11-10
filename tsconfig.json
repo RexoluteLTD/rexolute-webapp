@@ -1,23 +1,68 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
+    "noEmit": true,
+    "types": [
+      "vite/client",
+      "node"
+    ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@rexolute/ui": [
+        "./packages/ui/src/index.ts"
+      ],
+      "@rexolute/ui/*": [
+        "./packages/ui/src/*"
+      ],
+      "@rexolute/utils": [
+        "./packages/utils/src/index.ts"
+      ],
+      "@rexolute/utils/*": [
+        "./packages/utils/src/*"
+      ],
+      "@rexolute/api": [
+        "./packages/api/src/index.ts"
+      ],
+      "@rexolute/api/*": [
+        "./packages/api/src/*"
+      ],
+      "@rexolute/auth": [
+        "./packages/auth/src/index.ts"
+      ],
+      "@rexolute/auth/*": [
+        "./packages/auth/src/*"
+      ],
+      "@rexolute/assets": [
+        "./packages/assets/src/index.ts"
+      ],
+      "@rexolute/assets/*": [
+        "./packages/assets/src/*"
+      ],
+      "@rexolute/types": [
+        "./packages/types/src/index.ts"
+      ],
+      "@rexolute/types/*": [
+        "./packages/types/src/*"
+      ],
+      "@rexolute/ui/tailwind.config": [
+        "./packages/ui/tailwind.config.ts"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "packages",
+    "vite.shared.ts",
+    "vitest.config.ts"
+  ]
 }

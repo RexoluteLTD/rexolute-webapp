@@ -1,0 +1,18 @@
+{
+  "name": "@rexolute/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./guard": "./src/guard.tsx",
+    ".": "./src/index.ts",
+    "./provider": "./src/provider.tsx"
+  },
+  "dependencies": {
+    "@rexolute/api": "0.1.0",
+    "@rexolute/types": "0.1.0",
+    "@tanstack/react-router": "^1.139.0",
+    "react": "^19.2.0"
+  },
+  "sideEffects": false
+}

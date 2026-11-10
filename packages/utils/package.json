@@ -1,0 +1,20 @@
+{
+  "name": "@rexolute/utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./app-urls": "./src/app-urls.ts",
+    "./cn": "./src/cn.ts",
+    ".": "./src/index.ts",
+    "./misc": "./src/misc.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "dependencies": {
+    "@rexolute/types": "0.1.0",
+    "clsx": "^2.1.1",
+    "moment": "^2.30.1",
+    "tailwind-merge": "^2.5.5"
+  },
+  "sideEffects": false
+}

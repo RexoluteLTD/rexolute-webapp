@@ -1,0 +1,19 @@
+services:
+  app:
+    image: ${APP_IMAGE:?Set APP_IMAGE to an immutable image digest}
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-localhost}"
+      - "traefik.http.routers.${STACK_ID:?Set STACK_ID}.rule=Host(`${APP_DOMAIN:?Set APP_DOMAIN}`)"
+      - "traefik.http.routers.${STACK_ID}.entrypoints=websecure"
+      - "traefik.http.routers.${STACK_ID}.tls=true"
+      - "traefik.http.routers.${STACK_ID}.service=${STACK_ID}"
+      - "traefik.http.services.${STACK_ID}.loadbalancer.server.port=80"
+    mem_limit: 300m
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-localhost}
