@@ -32,7 +32,7 @@ function fixture(deployment) {
   }
   writeFileSync(join(root, "bin/docker"), `#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$MOCK_LOG"
-if [[ "$1" == login ]]; then cat > /dev/null; fi
+if [[ "$1" == login ]]; then cat > /dev/null; if [[ "\${MOCK_LOGIN_FAIL:-}" == true ]]; then exit 1; fi; fi
 if [[ "$*" == *candidate.env* && "$*" == *' up '* && "\${MOCK_FAIL:-}" == true ]]; then exit 1; fi
 `, { mode: 0o755 });
   function run(fail = false, overrides = {}) {
@@ -99,8 +99,51 @@ test("an environment/path mismatch fails before Docker or state changes", () => 
   try {
     const result = f.run(false, { TARGET: "development" });
     assert.equal(result.status, 1);
+    assert.match(result.stderr, /Release must be inside the frontend-admin-dev deployment directory/);
     assert.equal(existsSync(join(f.root, "docker.log")), false);
     assert.equal(existsSync(join(f.state, "candidate.env")), false);
     assert.equal(existsSync(join(f.state, ".env")), false);
+  } finally { f.cleanup(); }
+});
+
+for (const [variable, value, message] of [
+  ["TARGET", "staging", /TARGET must be production or development/],
+  ["APP", "other", /APP must be landing, admin, or client/],
+  ["RELEASE_ID", "invalid", /RELEASE_ID must have the form/],
+  ["BASE_DOMAIN", "example.co\n", /BASE_DOMAIN must be a bare lowercase domain/],
+  ["TRAEFIK_NETWORK", "localhost\r", /TRAEFIK_NETWORK contains unsupported characters/],
+]) {
+  test(`invalid ${variable} reports its cause before Docker runs`, () => {
+    const f = fixture(deployments[3]);
+    try {
+      const result = f.run(false, { [variable]: value });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, message);
+      assert.equal(existsSync(join(f.root, "docker.log")), false);
+      assert.equal(existsSync(join(f.state, "candidate.env")), false);
+    } finally { f.cleanup(); }
+  });
+}
+
+test("an invalid image artifact identifies the failure before Docker runs", () => {
+  const f = fixture(deployments[3]);
+  try {
+    writeFileSync(join(f.state, "releases/1-1/images/landing.txt"), "ghcr.io/example/landing:latest\n");
+    const result = f.run();
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /images\/landing.txt must contain a GHCR image with a sha256 digest/);
+    assert.equal(existsSync(join(f.root, "docker.log")), false);
+  } finally { f.cleanup(); }
+});
+
+test("a registry login failure reports its stage without exposing the token", () => {
+  const f = fixture(deployments[3]);
+  try {
+    const token = "private-registry-token-for-test";
+    const result = f.run(false, { MOCK_LOGIN_FAIL: "true", REGISTRY_PASSWORD: token });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Release failed while authenticating to GHCR \(line \d+, exit 1\)/);
+    assert.equal((result.stdout + result.stderr).includes(token), false);
+    assert.equal(existsSync(join(f.state, "candidate.env")), false);
   } finally { f.cleanup(); }
 });

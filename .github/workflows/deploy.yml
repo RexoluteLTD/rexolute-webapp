@@ -189,4 +189,10 @@ jobs:
           command_timeout: 15m
           script: |
             set -eu
-            bash "/var/apps/$APP_DIR/releases/$RELEASE_ID/deploy/release.sh"
+            echo 'SSH session established; locating the release script.'
+            release_script="/var/apps/$APP_DIR/releases/$RELEASE_ID/deploy/release.sh"
+            if [ ! -r "$release_script" ]; then
+              printf 'Release script is missing or unreadable: %s\n' "$release_script" >&2
+              exit 1
+            fi
+            bash "$release_script"
