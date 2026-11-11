@@ -9,9 +9,9 @@ const deployments = [
   { target: "production", app: "landing", directory: "frontend-landing", domain: "example.co" },
   { target: "production", app: "admin", directory: "frontend-admin", domain: "admin.example.co" },
   { target: "production", app: "client", directory: "frontend-client", domain: "client.example.co" },
-  { target: "development", app: "landing", directory: "frontend-landing-dev", domain: "dev.example.co" },
-  { target: "development", app: "admin", directory: "frontend-admin-dev", domain: "admin.dev.example.co" },
-  { target: "development", app: "client", directory: "frontend-client-dev", domain: "client.dev.example.co" },
+  { target: "development", app: "landing", directory: "frontend-landing-dev", domain: "landing-dev.example.co" },
+  { target: "development", app: "admin", directory: "frontend-admin-dev", domain: "admin-dev.example.co" },
+  { target: "development", app: "client", directory: "frontend-client-dev", domain: "client-dev.example.co" },
 ];
 
 function fixture(deployment) {

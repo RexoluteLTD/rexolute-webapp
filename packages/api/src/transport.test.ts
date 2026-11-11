@@ -16,9 +16,9 @@ describe("same-origin API routing", () => {
     "https://example.co",
     "https://admin.example.co",
     "https://client.example.co",
-    "https://dev.example.co",
-    "https://admin.dev.example.co",
-    "https://client.dev.example.co",
+    "https://landing-dev.example.co",
+    "https://admin-dev.example.co",
+    "https://client-dev.example.co",
     "http://localhost:5174",
   ])("keeps public and authenticated requests on %s, including deep links", (origin) => {
     for (const client of [publicApi, api]) {

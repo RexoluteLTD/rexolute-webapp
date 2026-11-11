@@ -17,18 +17,20 @@ TRAEFIK_NETWORK=${TRAEFIK_NETWORK:-localhost}
 release=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 state=$(cd -- "$release/../.." && pwd)
 directory="frontend-$APP"
-domain=$BASE_DOMAIN
 if [[ "$TARGET" == development ]]; then
   directory+="-dev"
-  domain="dev.$BASE_DOMAIN"
 fi
 # Reject mismatched environments/apps before touching deployment state.
 [[ "$(basename -- "$state")" == "$directory" ]]
 [[ "$(basename -- "$release")" == "$RELEASE_ID" ]]
 image=$(cat -- "$release/images/$APP.txt")
 [[ "$image" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]]
-app_domain=$domain
-if [[ "$APP" != landing ]]; then app_domain="$APP.$domain"; fi
+app_domain=$BASE_DOMAIN
+if [[ "$TARGET" == development ]]; then
+  app_domain="$APP-dev.$BASE_DOMAIN"
+elif [[ "$APP" != landing ]]; then
+  app_domain="$APP.$BASE_DOMAIN"
+fi
 # Preserve project/router names so moving directories updates existing containers.
 stack="rexolute-$TARGET-$APP"
 

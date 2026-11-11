@@ -85,9 +85,17 @@ jobs:
           set -euo pipefail
           : "${BASE_DOMAIN:?Set BASE_DOMAIN in the GitHub environment}"
           [[ "$BASE_DOMAIN" =~ ^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$ ]]
-          domain="$BASE_DOMAIN"
-          if [ "$TARGET" = development ]; then domain="dev.$BASE_DOMAIN"; fi
-          echo "domain=$domain" >> "$GITHUB_OUTPUT"
+          landing_domain="$BASE_DOMAIN"
+          admin_domain="admin.$BASE_DOMAIN"
+          client_domain="app.$BASE_DOMAIN"
+          if [ "$TARGET" = development ]; then
+            landing_domain="landing-dev.$BASE_DOMAIN"
+            admin_domain="admin-dev.$BASE_DOMAIN"
+            client_domain="app-dev.$BASE_DOMAIN"
+          fi
+          echo "landing_domain=$landing_domain" >> "$GITHUB_OUTPUT"
+          echo "admin_domain=$admin_domain" >> "$GITHUB_OUTPUT"
+          echo "client_domain=$client_domain" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/${APP}" >> "$GITHUB_OUTPUT"
         # APP is validated by the affected-app selector, not a freeform input.
         # All VITE values below are public configuration.
@@ -108,9 +116,9 @@ jobs:
           build-args: |
             APP=${{ matrix.app }}
             VITE_SITE_INDEXABLE=${{ needs.plan.outputs.environment == 'production' }}
-            VITE_LANDING_URL=https://${{ steps.config.outputs.domain }}
-            VITE_ADMIN_URL=https://admin.${{ steps.config.outputs.domain }}
-            VITE_CLIENT_URL=https://client.${{ steps.config.outputs.domain }}
+            VITE_LANDING_URL=https://${{ steps.config.outputs.landing_domain }}
+            VITE_ADMIN_URL=https://${{ steps.config.outputs.admin_domain }}
+            VITE_CLIENT_URL=https://${{ steps.config.outputs.client_domain }}
           cache-from: type=gha,scope=${{ needs.plan.outputs.environment }}-${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ needs.plan.outputs.environment }}-${{ matrix.app }}
       - name: Record immutable release image

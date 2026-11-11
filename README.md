@@ -163,9 +163,9 @@ The obsolete root Next.js Dockerfile and Compose draft have been removed. `deplo
 
 | App | Production (`main`) | Development (`dev`) |
 | --- | --- | --- |
-| Landing | `example.co` | `dev.example.co` |
-| Admin | `admin.example.co` | `admin.dev.example.co` |
-| Client | `client.example.co` | `client.dev.example.co` |
+| Landing | `example.co` | `landing-dev.example.co` |
+| Admin | `admin.example.co` | `admin-dev.example.co` |
+| Client | `client.example.co` | `client-dev.example.co` |
 
 Create both GitHub environments and configure the following in each:
 
