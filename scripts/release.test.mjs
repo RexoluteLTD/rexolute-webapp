@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, readFileSync, existsSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -35,8 +35,8 @@ printf '%s\\n' "$*" >> "$MOCK_LOG"
 if [[ "$1" == login ]]; then cat > /dev/null; if [[ "\${MOCK_LOGIN_FAIL:-}" == true ]]; then exit 1; fi; fi
 if [[ "$*" == *candidate.env* && "$*" == *' up '* && "\${MOCK_FAIL:-}" == true ]]; then exit 1; fi
 `, { mode: 0o755 });
-  function run(fail = false, overrides = {}) {
-    return spawnSync("bash", [join(release, "deploy/release.sh")], { encoding: "utf8", env: {
+  function run(fail = false, overrides = {}, script, cwd) {
+    return spawnSync("bash", script ? ["-c", script] : [join(release, "deploy/release.sh")], { encoding: "utf8", cwd, env: {
       ...process.env, PATH: `${join(root, "bin")}:${process.env.PATH}`, TARGET: target, APP: app,
       RELEASE_ID: "1-1", BASE_DOMAIN: "example.co", REGISTRY_USER: "example", REGISTRY_PASSWORD: "dummy",
       MOCK_LOG: join(root, "docker.log"), MOCK_FAIL: String(fail), ...overrides,
@@ -145,5 +145,91 @@ test("a registry login failure reports its stage without exposing the token", ()
     assert.match(result.stderr, /Release failed while authenticating to GHCR \(line \d+, exit 1\)/);
     assert.equal((result.stdout + result.stderr).includes(token), false);
     assert.equal(existsSync(join(f.state, "candidate.env")), false);
+  } finally { f.cleanup(); }
+});
+
+function workflowScript(name) {
+  const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+  const step = workflow.split(`      - name: ${name}\n`)[1].split("      - name:")[0];
+  return step.split("        run: ")[1].replace(/^\|\n/, "")
+    .split("\n").map((line) => line.replace(/^ {10}/, "")).join("\n");
+}
+
+for (const deployment of deployments.filter(({ app }) => app === "landing")) {
+  test(`native SSH uploads only the selected app and deploys ${deployment.target}`, () => {
+    const f = fixture(deployment);
+    try {
+      const workspace = join(f.root, "workspace");
+      const runnerTemp = join(f.root, "runner-temp");
+      mkdirSync(join(workspace, "deploy"), { recursive: true });
+      mkdirSync(join(workspace, "images"));
+      mkdirSync(runnerTemp);
+      for (const file of ["compose.yml", "release.sh"]) {
+        copyFileSync(`deploy/${file}`, join(workspace, "deploy", file));
+      }
+      copyFileSync(join(f.state, "releases/1-1/images/landing.txt"), join(workspace, "images/landing.txt"));
+      writeFileSync(join(workspace, "images/admin.txt"), "must not upload");
+      writeFileSync(join(f.root, "bin/ssh"), `#!/usr/bin/env bash
+set -euo pipefail
+[[ "$*" == *StrictHostKeyChecking=yes* && "$*" == *BatchMode=yes* && "$*" == *'-p 2222'* ]]
+# Execute the remote command locally, preserving streamed stdin.
+command="\${!#}"
+bash -c "$command"
+`, { mode: 0o755 });
+      writeFileSync(join(f.root, "bin/scp"), `#!/usr/bin/env bash
+set -euo pipefail
+[[ "$*" == *StrictHostKeyChecking=yes* && "$*" == *'-P 2222'* ]]
+args=("$@")
+source_file="\${args[\${#args[@]}-2]}"
+destination="\${args[\${#args[@]}-1]}"
+cp -- "$source_file" "\${destination#*:}"
+`, { mode: 0o755 });
+      const token = "private token'\"; $(touch TOKEN_LEAKED) `touch TOKEN_LEAKED`";
+      const result = f.run(false, {
+        TARGET: "/unused/binary/path",
+        DEPLOY_ENVIRONMENT: deployment.target,
+        APP_DIR: deployment.directory,
+        RUNNER_TEMP: runnerTemp,
+        VPS_HOST: "example.co", VPS_USER: "deploy", VPS_SSH_PORT: "2222",
+        TRAEFIK_NETWORK: "localhost",
+        REGISTRY_PASSWORD: token,
+      }, workflowScript("Upload release and deploy").replaceAll("/var/apps/", `${f.root}/`), workspace);
+      assert.equal(result.status, 0, result.stderr);
+      const state = readFileSync(join(f.state, ".env"), "utf8");
+      assert.ok(state.includes(`APP_DOMAIN=${deployment.domain}\n`));
+      assert.equal((result.stdout + result.stderr + state).includes(token), false);
+      assert.equal(existsSync(join(workspace, "TOKEN_LEAKED")), false);
+      assert.equal(existsSync(join(f.state, "releases/1-1/TOKEN_LEAKED")), false);
+      assert.equal(existsSync(join(f.state, "releases/1-1/images/admin.txt")), false);
+      const cleanup = f.run(false, { RUNNER_TEMP: runnerTemp }, workflowScript("Remove runner SSH credentials"));
+      assert.equal(cleanup.status, 0, cleanup.stderr);
+      assert.equal(existsSync(join(runnerTemp, "release.tgz")), false);
+    } finally { f.cleanup(); }
+  });
+}
+
+test("SSH setup requires verified host keys and cleans up its private files", () => {
+  const f = fixture(deployments[3]);
+  try {
+    const runnerTemp = join(f.root, "runner-temp");
+    mkdirSync(runnerTemp);
+    const env = {
+      RUNNER_TEMP: runnerTemp, VPS_HOST: "example.co", VPS_USER: "deploy", VPS_SSH_PORT: "2222",
+      VPS_SSH_KEY: "test-private-key", VPS_KNOWN_HOSTS: "",
+    };
+    const missing = f.run(false, env, workflowScript("Configure authenticated SSH"));
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /Configure independently verified VPS_KNOWN_HOSTS/);
+    const result = f.run(false, { ...env, VPS_KNOWN_HOSTS: "[example.co]:2222 ssh-ed25519 test-key" }, workflowScript("Configure authenticated SSH"));
+    assert.equal(result.status, 0, result.stderr);
+    const key = join(runnerTemp, "rexolute-ssh/deploy_key");
+    assert.equal(statSync(key).mode & 0o777, 0o600);
+    assert.equal(readFileSync(key, "utf8"), "test-private-key\n");
+    for (const port of ["0", "65536", "-22", "22;exit"]) {
+      assert.notEqual(f.run(false, { ...env, VPS_KNOWN_HOSTS: "test-key", VPS_SSH_PORT: port }, workflowScript("Configure authenticated SSH")).status, 0);
+    }
+    const cleanup = f.run(false, env, workflowScript("Remove runner SSH credentials"));
+    assert.equal(cleanup.status, 0, cleanup.stderr);
+    assert.equal(existsSync(key), false);
   } finally { f.cleanup(); }
 });

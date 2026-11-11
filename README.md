@@ -170,8 +170,11 @@ The obsolete root Next.js Dockerfile and Compose draft have been removed. `deplo
 Create both GitHub environments and configure the following in each:
 
 - Variables: `BASE_DOMAIN` (bare domain, without `https://`; use the same base in both environments).
-- Optional variables: `TRAEFIK_NETWORK` (defaults to `localhost`), `GHCR_USER` (defaults to the repository owner).
-- Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, and `CR_PAT` (a registry token with permission to pull the repository's GHCR packages).
+- Optional variables: `TRAEFIK_NETWORK` (defaults to `localhost`), `GHCR_USER` (defaults to the repository owner), `VPS_SSH_PORT` (defaults to `22`).
+- Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_KNOWN_HOSTS`, and `CR_PAT` (a registry token with permission to pull the repository's GHCR packages).
+
+Deployment uses native OpenSSH with strict host-key verification. Set `VPS_KNOWN_HOSTS` to the full known-hosts entry for `VPS_HOST`, verified through the VPS provider console or another trusted channel. For a custom port, the entry must identify `[hostname]:port`. An unverified `ssh-keyscan` result alone does not establish trust. The SSH user needs write access to the app directories under `/var/apps` and permission to run Docker. Runner SSH files are removed even after failure; the registry pull token is streamed over SSH and is never stored in release files.
+
 
 The workflow publishes with `GITHUB_TOKEN`. The deployment user needs Bash, Docker, and Docker Compose v2 with `up --wait` support, permission to use Docker, and permission to create/write the app directories under `/var/apps` (or have those directories pre-created for the deployment user). Provision the external Traefik network and a running Traefik instance with the `websecure` entrypoint and TLS certificates for every hostname above. Point DNS at the corresponding VPS; production and development can use the same VPS or different environment-specific hosts. The generated rules cover the listed hostnames; `www` aliases require additional routing/DNS configuration. The VPS backend Traefik routers must match `/api/v1/` on each app hostname and forward requests to the correct production/development backend container. The frontend router excludes `/api/` so it cannot intercept those requests. Any prefix stripping required by the backend belongs in its existing Traefik middleware. Nginx retains an API 404 fallback for requests incorrectly sent directly to the static container. No local app `.env` files or backend secrets are uploaded.
 

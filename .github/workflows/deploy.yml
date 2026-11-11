@@ -145,8 +145,15 @@ jobs:
       fail-fast: false
       matrix:
         app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    timeout-minutes: 20
     env:
       APP_DIR: frontend-${{ matrix.app }}${{ needs.plan.outputs.environment == 'development' && '-dev' || '' }}
+      APP: ${{ matrix.app }}
+      DEPLOY_ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+      RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -163,36 +170,56 @@ jobs:
             echo 'Branch advanced; the next workflow will deploy the accumulated changes.' >&2
             exit 1
           fi
-      - name: Upload release manifest and image digests
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: deploy/compose.yml,deploy/release.sh,images/${{ matrix.app }}.txt
-          target: /var/apps/${{ env.APP_DIR }}/releases/${{ github.run_id }}-${{ github.run_attempt }}
-      - name: Deploy affected apps and verify health
-        uses: appleboy/ssh-action@v1
+      - name: Configure authenticated SSH
         env:
-          TARGET: ${{ needs.plan.outputs.environment }}
-          APP: ${{ matrix.app }}
-          RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${VPS_SSH_KEY:?Configure VPS_SSH_KEY}"
+          : "${VPS_KNOWN_HOSTS:?Configure independently verified VPS_KNOWN_HOSTS}"
+          [[ "$VPS_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]
+          [[ "$VPS_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]]
+          [[ "$VPS_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          (( 10#$VPS_SSH_PORT >= 1 && 10#$VPS_SSH_PORT <= 65535 ))
+          install -d -m 700 "$RUNNER_TEMP/rexolute-ssh"
+          umask 077
+          printf '%s\n' "$VPS_SSH_KEY" > "$RUNNER_TEMP/rexolute-ssh/deploy_key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$RUNNER_TEMP/rexolute-ssh/known_hosts"
+      - name: Upload release and deploy
+        timeout-minutes: 15
+        env:
           BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
           TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK || 'localhost' }}
           REGISTRY_USER: ${{ vars.GHCR_USER || github.repository_owner }}
           REGISTRY_PASSWORD: ${{ secrets.CR_PAT }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          envs: TARGET,APP,APP_DIR,RELEASE_ID,BASE_DOMAIN,TRAEFIK_NETWORK,REGISTRY_USER,REGISTRY_PASSWORD
-          command_timeout: 15m
-          script: |
-            set -eu
-            echo 'SSH session established; locating the release script.'
-            release_script="/var/apps/$APP_DIR/releases/$RELEASE_ID/deploy/release.sh"
-            if [ ! -r "$release_script" ]; then
-              printf 'Release script is missing or unreadable: %s\n' "$release_script" >&2
-              exit 1
-            fi
-            bash "$release_script"
+        run: |
+          set -euo pipefail
+          : "${REGISTRY_PASSWORD:?Configure CR_PAT for registry pulls}"
+          [[ "$APP" == landing || "$APP" == admin || "$APP" == client ]]
+          [[ "$DEPLOY_ENVIRONMENT" == production || "$DEPLOY_ENVIRONMENT" == development ]]
+          [[ "$RELEASE_ID" =~ ^[0-9]+-[0-9]+$ ]]
+          expected_dir="frontend-$APP"
+          if [[ "$DEPLOY_ENVIRONMENT" == development ]]; then expected_dir+="-dev"; fi
+          [[ "$APP_DIR" == "$expected_dir" ]]
+          ssh_options=(-i "$RUNNER_TEMP/rexolute-ssh/deploy_key"
+            -o "UserKnownHostsFile=$RUNNER_TEMP/rexolute-ssh/known_hosts"
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+          destination="$VPS_USER@$VPS_HOST"
+          release_dir="/var/apps/$APP_DIR/releases/$RELEASE_ID"
+          tar -czf "$RUNNER_TEMP/release.tgz" deploy/compose.yml deploy/release.sh "images/$APP.txt"
+          ssh "${ssh_options[@]}" -p "$VPS_SSH_PORT" "$destination" "umask 077; mkdir -p '$release_dir'"
+          scp "${ssh_options[@]}" -P "$VPS_SSH_PORT" "$RUNNER_TEMP/release.tgz" "$destination:$release_dir/"
+          # Stream quoted assignments over SSH; never write the pull token to a release file.
+          # The remote shell is explicitly Bash so printf %q quoting is interpreted correctly.
+          {
+            printf 'set -euo pipefail\numask 077\n'
+            printf 'cd %q\ntar -xzf release.tgz\n' "$release_dir"
+            printf 'export TARGET=%q APP=%q RELEASE_ID=%q BASE_DOMAIN=%q TRAEFIK_NETWORK=%q REGISTRY_USER=%q REGISTRY_PASSWORD=%q\n' \
+              "$DEPLOY_ENVIRONMENT" "$APP" "$RELEASE_ID" "$BASE_DOMAIN" "$TRAEFIK_NETWORK" "$REGISTRY_USER" "$REGISTRY_PASSWORD"
+            printf 'exec bash %q\n' "$release_dir/deploy/release.sh"
+          } | ssh "${ssh_options[@]}" -p "$VPS_SSH_PORT" "$destination" 'bash --noprofile --norc -se'
+      - name: Remove runner SSH credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/rexolute-ssh" "$RUNNER_TEMP/release.tgz"
