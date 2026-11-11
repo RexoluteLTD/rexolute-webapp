@@ -63,8 +63,8 @@ printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io -u "$REGISTRY_USER" --pa
 unset REGISTRY_PASSWORD
 
 candidate="$state/candidate.env"
-printf 'APP_IMAGE=%s\nAPP_DOMAIN=%s\nSTACK_ID=%s\nTRAEFIK_NETWORK=%s\n' \
-  "$image" "$app_domain" "$stack" "$TRAEFIK_NETWORK" > "$candidate"
+printf 'APP_IMAGE=%s\nAPP_DOMAIN=%s\nSTACK_ID=%s\nTRAEFIK_NETWORK=%s\nBACKEND_SERVICE=%s\n' \
+  "$image" "$app_domain" "$stack" "$TRAEFIK_NETWORK" "rexolute-$TARGET@docker" > "$candidate"
 compose=(docker compose --project-name "$stack" --env-file "$candidate" -f "$release/deploy/compose.yml")
 stage='validating the Compose manifest'
 echo 'Validating the Compose manifest.'

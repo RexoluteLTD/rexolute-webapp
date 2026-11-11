@@ -7,12 +7,19 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${TRAEFIK_NETWORK:-localhost}"
-      # The VPS backend router owns /api/v1/ on this same hostname.
-      - "traefik.http.routers.${STACK_ID:?Set STACK_ID}.rule=Host(`${APP_DOMAIN:?Set APP_DOMAIN}`) && !PathPrefix(`/api/`)"
+      # Reserve versioned API paths for the backend gateway on the same hostname.
+      - "traefik.http.routers.${STACK_ID:?Set STACK_ID}.rule=Host(`${APP_DOMAIN:?Set APP_DOMAIN}`) && !(PathPrefix(`/v1/`) || PathPrefix(`/api/v1/`))"
       - "traefik.http.routers.${STACK_ID}.entrypoints=websecure"
       - "traefik.http.routers.${STACK_ID}.tls=true"
       - "traefik.http.routers.${STACK_ID}.service=${STACK_ID}"
       - "traefik.http.services.${STACK_ID}.loadbalancer.server.port=80"
+      - "traefik.http.routers.${STACK_ID}-api.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/v1/`) || PathPrefix(`/api/v1/`))"
+      - "traefik.http.routers.${STACK_ID}-api.entrypoints=websecure"
+      - "traefik.http.routers.${STACK_ID}-api.tls=true"
+      - "traefik.http.routers.${STACK_ID}-api.middlewares=${STACK_ID}-strip-api"
+      - "traefik.http.middlewares.${STACK_ID}-strip-api.stripprefix.prefixes=/api"
+      # Reference the gateway service registered by the matching backend environment.
+      - "traefik.http.routers.${STACK_ID}-api.service=${BACKEND_SERVICE:?Set BACKEND_SERVICE to the backend Traefik service}"
     mem_limit: 300m
 networks:
   proxy:

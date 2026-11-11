@@ -55,6 +55,7 @@ for (const deployment of deployments) {
       assert.ok(state.includes(`APP_DOMAIN=${deployment.domain}\n`));
       assert.ok(state.includes(`APP_IMAGE=ghcr.io/example/rexolute/${deployment.app}@sha256:`));
       assert.ok(state.includes(`STACK_ID=rexolute-${deployment.target}-${deployment.app}\n`));
+      assert.ok(state.includes(`BACKEND_SERVICE=rexolute-${deployment.target}@docker\n`));
       assert.equal(existsSync(join(f.state, "compose.yml")), true);
       for (const other of deployments.filter((entry) => entry.directory !== deployment.directory)) {
         assert.equal(readFileSync(join(f.root, other.directory, ".env"), "utf8"), "unchanged\n");
