@@ -1,8 +1,7 @@
 name: Frontend checks
 on:
-  push:
-    branches-ignore: [main, dev]
   pull_request:
+    branches: [main, dev]
   workflow_call:
     inputs:
       apps:

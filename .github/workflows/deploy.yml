@@ -130,14 +130,20 @@ jobs:
       APP: ${{ matrix.app }}
   deploy:
     needs: [plan, images]
+    if: needs.plan.outputs.changed == 'true'
     runs-on: ubuntu-latest
     environment: ${{ needs.plan.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    env:
+      APP_DIR: frontend-${{ matrix.app }}${{ needs.plan.outputs.environment == 'development' && '-dev' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: image-*
-          merge-multiple: true
+          name: image-${{ matrix.app }}
           path: images
       - name: Reject superseded commits
         env:
@@ -155,12 +161,13 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: deploy/compose.yml,deploy/release.sh,images/*.txt
-          target: /var/apps/rexolute/${{ needs.plan.outputs.environment }}/releases/${{ github.run_id }}-${{ github.run_attempt }}
+          source: deploy/compose.yml,deploy/release.sh,images/${{ matrix.app }}.txt
+          target: /var/apps/${{ env.APP_DIR }}/releases/${{ github.run_id }}-${{ github.run_attempt }}
       - name: Deploy affected apps and verify health
         uses: appleboy/ssh-action@v1
         env:
           TARGET: ${{ needs.plan.outputs.environment }}
+          APP: ${{ matrix.app }}
           RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
           BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
           TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK || 'localhost' }}
@@ -170,8 +177,8 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: TARGET,RELEASE_ID,BASE_DOMAIN,TRAEFIK_NETWORK,REGISTRY_USER,REGISTRY_PASSWORD
+          envs: TARGET,APP,APP_DIR,RELEASE_ID,BASE_DOMAIN,TRAEFIK_NETWORK,REGISTRY_USER,REGISTRY_PASSWORD
           command_timeout: 15m
           script: |
             set -eu
-            bash "/var/apps/rexolute/$TARGET/releases/$RELEASE_ID/deploy/release.sh"
+            bash "/var/apps/$APP_DIR/releases/$RELEASE_ID/deploy/release.sh"
