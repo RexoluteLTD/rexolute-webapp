@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.next
+.env*
+.codex
+.agents
+.aws
+
+**/.turbo
+
+**/.tanstack
+
+# Exclude app-local environment files at every depth.
+**/.env*

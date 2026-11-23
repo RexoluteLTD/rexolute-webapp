@@ -1,0 +1,262 @@
+specialist
+What is your main reason(s) for seeking therapy?
+
+   6 |           3 | Substance dependence/Addiction
+   7 |           3 | Depression and other mood problems
+   8 |           3 | Relationship problem
+   9 |           3 | Family problem
+  10 |           3 | Health Problem
+  11 |           3 | OCD
+  12 |           3 | Anger problem
+  13 |           3 | Stress
+  14 |           3 | Phobia
+  15 |           3 | Anxiety
+  16 |           3 | Loss of motivation/drive
+  17 |           3 | Self Esteem problem.
+  18 |           3 | PTSD
+  19 |           3 | Sleep Problem
+  20 |           3 | Panic Attack
+  21 |           3 | Schizophrenia
+  22 |           3 | Personality Disorder
+  23 |           3 | Choice problem
+  24 |           3 | Abuse
+  25 |           3 | Bereavement/Grief
+  26 |           3 | Career Problem
+  27 |           3 | Eating Problem
+  28 |           3 | Other symptoms not on the list
+  
+  
+  
+  these questions below are for couples but under the "What is your main reason(s) for seeking therapy?"
+  
+  these question will be categorize under expertise and not specialist.
+  
+  54 |           8 | Overcome infidelity
+  55 |           8 | Prevent divorce or separation
+  56 |           8 | Solve issues with our kids
+  57 |           8 | Family Issue
+  58 |           8 | Win back my partners love
+  59 |           8 | Decide whether to separate
+  60 |           8 | Improve sex and intimacy
+  61 |           8 | Resolve conflict
+  62 |           8 | Understand my partner better
+  63 |           8 | Stop hurting each other
+  
+
+  these questions below are for couples but under the "What is your main reason(s) for seeking therapy?"
+  
+  these question will be categorize under expertise and not specialist.
+  
+  75 |          14 | Behavioral issues
+  76 |          14 | Emotional struggles
+  77 |          14 | Academic difficulties
+  78 |          14 | Social skills deficits
+  79 |          14 | Family changes
+  80 |          14 | Traumatic experiences
+  81 |          14 | Adjustment issues
+  82 |          14 | Attention and hyperactivity problem
+  83 |          14 | Eating or sleeping disturbance
+  84 |          14 | Substance abuse issues
+  85 |          14 | Substance abuse issues
+  86 |          14 | Others
+
+
+expertise
+
+these questions blow are for individuals
+Do you have any specific symptom related to your mental health concerns?
+
+  29 |           4 | Sleep problems
+  30 |           4 | Eating problem
+  31 |           4 | Mood changes
+  32 |           4 | Social Withdrawal
+  33 |           4 | Loss of functioning
+  34 |           4 | Thought problem
+  35 |           4 | Heightened Sensitivity
+  36 |           4 | Feeling disconnected
+  37 |           4 | Nervousness
+  38 |           4 | Low stress tolerance
+  39 |           4 | Fear
+  40 |           4 | Other symptoms not on the list
+  
+  
+  
+  
+  ///// ----- therapist sections ----- /////
+  
+  
+  
+  therapist Specialist session
+  
+  96 |          19 | Psychiatry
+  97 |          19 | Clinical Psychology
+  98 |          19 | Other Psychology Field
+  99 |          19 | Counseling
+ 100 |          19 | Social Works
+ 101 |          19 | Guidance and Counseling
+ 102 |          19 | Cognitive Therapy
+ 103 |          19 | Humanistic/Existential Therapy
+ 104 |          19 | Cognitive Behavioral Therapy
+ 105 |          19 | Mindfulness Therapy
+ 106 |          19 | Mindfulness Based CBT
+ 107 |          19 | Rational Emotive Behavioral Therapy
+ 108 |          19 | Dialectic Behavioral Therapy
+ 109 |          19 | Rational Therapy
+  
+  
+  therapist expertise session
+  
+ 110 |          20 | Abuse / Neglect
+ 111 |          20 | Adult and Aging Issues
+ 112 |          20 | Anxiety
+ 113 |          20 | Personality Disorder
+ 114 |          20 | Career & Life adjustment
+ 115 |          20 | Childhood & Adolescent Problems
+ 116 |          20 | Couples Challenges
+ 117 |          20 | Marriage & Relationship Challenges
+ 118 |          20 | Crisis Intervention/Disaster Relief
+ 119 |          20 | Depression & other mood disorders
+ 120 |          20 | Disabilities
+ 121 |          20 | Eating Disorder
+ 122 |          20 | Family Therapy
+ 123 |          20 | Group Psychotherapy
+ 124 |          20 | Individual Psychotherapy
+ 125 |          20 | Life threatening & Terminal disease therapy
+ 126 |          20 | Psychosomatic Problems
+ 127 |          20 | Pregnancy & Child rearing problems
+ 128 |          20 | Sleep Problems
+ 129 |          20 | Substance & Behavioral addiction
+ 130 |          20 | Others
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ chatgpt categories for specialities: 
+ | **Reason for Therapy**             | **Recommended Specialties**                                                                                                  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Substance dependence/Addiction     | Psychiatry, Clinical Psychology, Counseling, Cognitive Behavioral Therapy, Rational Emotive Behavioral Therapy               |
+| Depression and other mood problems | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT, Humanistic/Existential Therapy |
+| Relationship problem               | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Family problem                     | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Health Problem                     | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| OCD                                | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Anger problem                      | Psychiatry, Clinical Psychology, Counseling, CBT, Humanistic/Existential Therapy                                             |
+| Stress                             | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT                                 |
+| Phobia                             | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Anxiety                            | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT                                 |
+| Loss of motivation/drive           | Psychiatry, Clinical Psychology, Counseling, CBT, Humanistic/Existential Therapy                                             |
+| Self Esteem problem                | Counseling, Humanistic/Existential Therapy, Cognitive Therapy, Mindfulness Therapy                                           |
+| PTSD                               | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Sleep Problem                      | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Panic Attack                       | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Schizophrenia                      | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, CBT                                                           |
+| Personality Disorder               | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Choice problem                     | Counseling, Humanistic/Existential Therapy, Cognitive Therapy, Mindfulness Therapy                                           |
+| Abuse                              | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Bereavement/Grief                  | Counseling, Guidance and Counseling, Social Works, Humanistic/Existential Therapy                                            |
+| Career Problem                     | Counseling, Guidance and Counseling, Social Works, Humanistic/Existential Therapy                                            |
+| Eating Problem                     | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Other symptoms not on the list     | Other Psychology Field, Counseling, Psychiatry                                                                               |
+
+
+google Gemini
+
+| **Reason for Therapy**             | **Recommended Specialties**                                                                                                  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Substance dependence/Addiction     | Psychiatry, Clinical Psychology, Counseling, Cognitive Behavioral Therapy, Rational Emotive Behavioral Therapy               |
+| Depression and other mood problems | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT, Humanistic/Existential Therapy |
+| Relationship problem               | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Family problem                     | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Health Problem                     | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| OCD                                | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Anger problem                      | Psychiatry, Clinical Psychology, Counseling, CBT, Humanistic/Existential Therapy                                             |
+| Stress                             | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT                                 |
+| Phobia                             | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Anxiety                            | Psychiatry, Clinical Psychology, Counseling, CBT, Mindfulness Therapy, Mindfulness Based CBT                                 |
+| Loss of motivation/drive           | Psychiatry, Clinical Psychology, Counseling, CBT, Humanistic/Existential Therapy                                             |
+| Self Esteem problem                | Counseling, Humanistic/Existential Therapy, Cognitive Therapy, Mindfulness Therapy                                           |
+| PTSD                               | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Sleep Problem                      | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Panic Attack                       | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Schizophrenia                      | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, CBT                                                           |
+| Personality Disorder               | Psychiatry, Clinical Psychology, Dialectic Behavioral Therapy, Rational Therapy, CBT                                         |
+| Choice problem                     | Counseling, Humanistic/Existential Therapy, Cognitive Therapy, Mindfulness Therapy                                           |
+| Abuse                              | Counseling, Social Works, Guidance and Counseling, Humanistic/Existential Therapy                                            |
+| Bereavement/Grief                  | Counseling, Guidance and Counseling, Social Works, Humanistic/Existential Therapy                                            |
+| Career Problem                     | Counseling, Guidance and Counseling, Social Works, Humanistic/Existential Therapy                                            |
+| Eating Problem                     | Psychiatry, Clinical Psychology, Cognitive Therapy, CBT, Mindfulness Based CBT                                               |
+| Other symptoms not on the list     | Other Psychology Field, Counseling, Psychiatry                                                                               |
+
+
+///// ----- Take note of this ----- //////
+
+Category	Specific Issues
+Mental Health Conditions:	Depression and other mood problems, OCD, Anxiety, PTSD, Panic Attack, Schizophrenia, Personality Disorder, Eating Problem
+Life & Relationship Challenges:	Relationship problem, Family problem, Health Problem, Stress, Loss of motivation/drive, Self Esteem problem, Choice problem, Career Problem, Abuse, Bereavement/Grief
+Behavioral & Habit Issues:	Substance dependence/Addiction, Anger problem, Phobia, Sleep Problem
+Other:	Other symptoms not on the list
+
+
+
+Category      		Specialties
+General Fields:  	Psychiatry, Clinical Psychology, Other Psychology Field, Counseling, Social Works, Guidance and Counseling
+Specific Therapy Types:	Cognitive Therapy, Humanistic/Existential Therapy, Cognitive Behavioral Therapy (CBT), Mindfulness Therapy, Mindfulness Based CBT, Rational Emotive Behavioral Therapy (REBT), Dialectic Behavioral Therapy (DBT), Rational Therapy
+
+
+
+
+///// ----- end of specialities ----- /////
+
+
+
+
+///// ----- Expertise begin here ----- /////
+
+for individuals
+
+Category		Specific Symptoms
+
+Physical & Behavioral:	Sleep problems, Eating problem, Social Withdrawal, Loss of functioning, Other symptoms not on the list
+
+Emotional & Psychological:	Mood changes, Thought problem, Heightened Sensitivity, Feeling disconnected, Nervousness, Low stress tolerance, Fear
+
+Specific Mental Health Issues:		Anxiety, Personality Disorder, Depression & other mood disorders, Eating Disorder, Sleep Problems, Substance & Behavioral addiction, Psychosomatic Problems
+
+Life & Relationship Challenges:		Abuse / Neglect, Adult and Aging Issues, Career & Life adjustment, Childhood & Adolescent Problems, Couples Challenges, Marriage & Relationship Challenges, Family Therapy, Pregnancy & Child rearing problems, Life threatening & Terminal disease therapy
+
+Treatment Modalities:			Crisis Intervention/Disaster Relief, Group Psychotherapy, Individual Psychotherapy
+
+General	Disabilities, Others
+
+
+
+///// ----- for couples ----- /////
+Therapist Expertise	Specific Client Issues
+
+Couples Challenges:	Overcome infidelity, Prevent divorce or separation, Win back my partner's love, Decide whether to separate, Improve sex and intimacy, Resolve conflict, Understand my partner better, Stop hurting each other
+
+Marriage & Relationship Challenges:
+Note: This expertise can be used as an alternative or additional category for the above issues.
+
+Family Therapy:				Solve issues with our kids, Family Issue
+Childhood & Adolescent Problems		Note: This expertise is also relevant for issues with children.
+
+
+
+
+
+
+///// ----- for children ----- /////
+
+Issue Category		Specific Issues
+
+Behavioral		Behavioral issues, Attention and hyperactivity problem, Eating or sleeping disturbance, Substance abuse issues
+
+Emotional		Emotional struggles
+
+Social:			Social skills deficits
+
+Academic:		Academic difficulties

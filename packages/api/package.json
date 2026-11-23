@@ -1,0 +1,19 @@
+{
+  "name": "@rexolute/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./axios": "./src/axios.ts",
+    "./error": "./src/error.ts",
+    ".": "./src/index.ts",
+    "./session": "./src/session.ts",
+    "./transport": "./src/transport.ts"
+  },
+  "dependencies": {
+    "@rexolute/types": "0.1.0",
+    "axios": "^1.13.2",
+    "jwt-decode": "^4.0.0"
+  },
+  "sideEffects": false
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@rexolute/types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./app": "./src/app.ts",
+    ".": "./src/index.ts",
+    "./user": "./src/user.ts"
+  },
+  "dependencies": {
+    "@types/react": "^19.2.7"
+  },
+  "sideEffects": false
+}
