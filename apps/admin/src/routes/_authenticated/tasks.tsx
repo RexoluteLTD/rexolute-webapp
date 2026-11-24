@@ -1,3 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazyRouteComponent } from "@tanstack/react-router";
-export const Route = createFileRoute("/_authenticated/tasks")({ component: lazyRouteComponent(() => import("../../pages/tasks")) });
+export const Route = createFileRoute("/_authenticated/tasks")({
+  component: lazyRouteComponent(() => import("../../components/pages/tasks")),
+});

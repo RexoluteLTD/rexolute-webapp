@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { affectedApps, changedApps, loadWorkspaces, appNames } from "./affected-apps.mjs";
+import { readFileSync } from "node:fs";
 
 const workspaces = loadWorkspaces();
 test("app edits and public assets select only their owning app", () => {
@@ -21,3 +22,12 @@ test("documentation and generated-only changes do not build apps", () => {
   assert.deepEqual(affectedApps(["README.md", "AGENTS.md", "apps/admin/src/routeTree.gen.ts"], workspaces), []);
 });
 test("a missing baseline initializes all apps", () => assert.deepEqual(changedApps(""), appNames));
+test("PR CI publishes and deployments reuse content-addressed app images", () => {
+  const checks = readFileSync(".github/workflows/checks.yml", "utf8");
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8");
+  assert.match(checks, /Build and publish reusable app image/);
+  assert.match(checks, /tag=build-\$TARGET-\$tree/);
+  assert.match(deploy, /Resolve reusable release image/);
+  assert.match(deploy, /steps\.resolve\.outputs\.reuse != 'true'/);
+  assert.match(deploy, /tag=build-\$TARGET-/);
+});

@@ -97,6 +97,7 @@ jobs:
           echo "admin_domain=$admin_domain" >> "$GITHUB_OUTPUT"
           echo "client_domain=$client_domain" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/${APP}" >> "$GITHUB_OUTPUT"
+          echo "tag=build-$TARGET-$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
         # APP is validated by the affected-app selector, not a freeform input.
         # All VITE values below are public configuration.
       - uses: docker/setup-buildx-action@v3
@@ -105,14 +106,34 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve reusable release image
+        id: resolve
+        env:
+          IMAGE: ${{ steps.config.outputs.image }}
+          TAG: ${{ steps.config.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if docker pull "$IMAGE:$TAG" >/dev/null 2>&1; then
+            digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG")
+            [[ "$digest" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]]
+            echo "reuse=true" >> "$GITHUB_OUTPUT"
+            echo "digest=$digest" >> "$GITHUB_OUTPUT"
+            echo "Reusing immutable image $digest"
+          else
+            echo "reuse=false" >> "$GITHUB_OUTPUT"
+            echo "No reusable image found; building $IMAGE:$TAG"
+          fi
       - name: Build and publish selected app
         id: image
+        if: steps.resolve.outputs.reuse != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile
           push: true
-          tags: ${{ steps.config.outputs.image }}:${{ needs.plan.outputs.environment }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          tags: |
+            ${{ steps.config.outputs.image }}:${{ needs.plan.outputs.environment }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+            ${{ steps.config.outputs.image }}:${{ steps.config.outputs.tag }}
           build-args: |
             APP=${{ matrix.app }}
             VITE_SITE_INDEXABLE=${{ needs.plan.outputs.environment == 'production' }}
@@ -124,7 +145,7 @@ jobs:
       - name: Record immutable release image
         env:
           IMAGE: ${{ steps.config.outputs.image }}
-          DIGEST: ${{ steps.image.outputs.digest }}
+          DIGEST: ${{ steps.resolve.outputs.digest || steps.image.outputs.digest }}
           APP: ${{ matrix.app }}
         run: |
           mkdir -p images

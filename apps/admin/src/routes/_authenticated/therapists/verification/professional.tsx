@@ -1,3 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazyRouteComponent } from "@tanstack/react-router";
-export const Route = createFileRoute("/_authenticated/therapists/verification/professional")({ component: lazyRouteComponent(() => import("../../../../pages/therapists/verification/professional/page")) });
+export const Route = createFileRoute(
+  "/_authenticated/therapists/verification/professional",
+)({
+  component: lazyRouteComponent(
+    () =>
+      import("../../../../components/pages/therapists/verification/professional/page"),
+  ),
+});

@@ -18,6 +18,9 @@ import { Route as VerifyOtpRouteImport } from "./routes/verify-otp";
 import { Route as AuthenticatedIndexRouteImport } from "./routes/_authenticated/index";
 import { Route as AuthenticatedActivitiesRouteImport } from "./routes/_authenticated/activities";
 import { Route as AuthenticatedTasksRouteImport } from "./routes/_authenticated/tasks";
+import { Route as AuthenticatedCmsCategoriesRouteImport } from "./routes/_authenticated/cms/categories";
+import { Route as AuthenticatedCmsNewPostRouteImport } from "./routes/_authenticated/cms/new-post";
+import { Route as AuthenticatedCmsPostsRouteImport } from "./routes/_authenticated/cms/posts";
 import { Route as AuthenticatedPartnershipsIndexRouteImport } from "./routes/_authenticated/partnerships/index";
 import { Route as AuthenticatedReportsIndexRouteImport } from "./routes/_authenticated/reports/index";
 import { Route as AuthenticatedSessionsIndexRouteImport } from "./routes/_authenticated/sessions/index";
@@ -80,6 +83,22 @@ const AuthenticatedActivitiesRoute = AuthenticatedActivitiesRouteImport.update({
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: "/tasks",
   path: "/tasks",
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any);
+const AuthenticatedCmsCategoriesRoute =
+  AuthenticatedCmsCategoriesRouteImport.update({
+    id: "/cms/categories",
+    path: "/cms/categories",
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any);
+const AuthenticatedCmsNewPostRoute = AuthenticatedCmsNewPostRouteImport.update({
+  id: "/cms/new-post",
+  path: "/cms/new-post",
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any);
+const AuthenticatedCmsPostsRoute = AuthenticatedCmsPostsRouteImport.update({
+  id: "/cms/posts",
+  path: "/cms/posts",
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any);
 const AuthenticatedPartnershipsIndexRoute =
@@ -205,6 +224,9 @@ export interface FileRoutesByFullPath {
   "/verify-otp": typeof VerifyOtpRoute;
   "/activities": typeof AuthenticatedActivitiesRoute;
   "/tasks": typeof AuthenticatedTasksRoute;
+  "/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
+  "/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
+  "/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -234,6 +256,9 @@ export interface FileRoutesByTo {
   "/activities": typeof AuthenticatedActivitiesRoute;
   "/tasks": typeof AuthenticatedTasksRoute;
   "/": typeof AuthenticatedIndexRoute;
+  "/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
+  "/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
+  "/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -265,6 +290,9 @@ export interface FileRoutesById {
   "/_authenticated/activities": typeof AuthenticatedActivitiesRoute;
   "/_authenticated/tasks": typeof AuthenticatedTasksRoute;
   "/_authenticated/": typeof AuthenticatedIndexRoute;
+  "/_authenticated/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
+  "/_authenticated/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
+  "/_authenticated/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/_authenticated/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/_authenticated/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/_authenticated/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -296,6 +324,9 @@ export interface FileRouteTypes {
     | "/verify-otp"
     | "/activities"
     | "/tasks"
+    | "/cms/categories"
+    | "/cms/new-post"
+    | "/cms/posts"
     | "/sessions/details"
     | "/sessions/list"
     | "/sessions/therapists"
@@ -325,6 +356,9 @@ export interface FileRouteTypes {
     | "/activities"
     | "/tasks"
     | "/"
+    | "/cms/categories"
+    | "/cms/new-post"
+    | "/cms/posts"
     | "/sessions/details"
     | "/sessions/list"
     | "/sessions/therapists"
@@ -355,6 +389,9 @@ export interface FileRouteTypes {
     | "/_authenticated/activities"
     | "/_authenticated/tasks"
     | "/_authenticated/"
+    | "/_authenticated/cms/categories"
+    | "/_authenticated/cms/new-post"
+    | "/_authenticated/cms/posts"
     | "/_authenticated/sessions/details"
     | "/_authenticated/sessions/list"
     | "/_authenticated/sessions/therapists"
@@ -448,6 +485,27 @@ declare module "@tanstack/react-router" {
       path: "/tasks";
       fullPath: "/tasks";
       preLoaderRoute: typeof AuthenticatedTasksRouteImport;
+      parentRoute: typeof AuthenticatedRouteRoute;
+    };
+    "/_authenticated/cms/categories": {
+      id: "/_authenticated/cms/categories";
+      path: "/cms/categories";
+      fullPath: "/cms/categories";
+      preLoaderRoute: typeof AuthenticatedCmsCategoriesRouteImport;
+      parentRoute: typeof AuthenticatedRouteRoute;
+    };
+    "/_authenticated/cms/new-post": {
+      id: "/_authenticated/cms/new-post";
+      path: "/cms/new-post";
+      fullPath: "/cms/new-post";
+      preLoaderRoute: typeof AuthenticatedCmsNewPostRouteImport;
+      parentRoute: typeof AuthenticatedRouteRoute;
+    };
+    "/_authenticated/cms/posts": {
+      id: "/_authenticated/cms/posts";
+      path: "/cms/posts";
+      fullPath: "/cms/posts";
+      preLoaderRoute: typeof AuthenticatedCmsPostsRouteImport;
       parentRoute: typeof AuthenticatedRouteRoute;
     };
     "/_authenticated/partnerships/": {
@@ -590,6 +648,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivitiesRoute: typeof AuthenticatedActivitiesRoute;
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute;
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute;
+  AuthenticatedCmsCategoriesRoute: typeof AuthenticatedCmsCategoriesRoute;
+  AuthenticatedCmsNewPostRoute: typeof AuthenticatedCmsNewPostRoute;
+  AuthenticatedCmsPostsRoute: typeof AuthenticatedCmsPostsRoute;
   AuthenticatedSessionsDetailsRoute: typeof AuthenticatedSessionsDetailsRoute;
   AuthenticatedSessionsListRoute: typeof AuthenticatedSessionsListRoute;
   AuthenticatedSessionsTherapistsRoute: typeof AuthenticatedSessionsTherapistsRoute;
@@ -615,6 +676,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivitiesRoute: AuthenticatedActivitiesRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCmsCategoriesRoute: AuthenticatedCmsCategoriesRoute,
+  AuthenticatedCmsNewPostRoute: AuthenticatedCmsNewPostRoute,
+  AuthenticatedCmsPostsRoute: AuthenticatedCmsPostsRoute,
   AuthenticatedSessionsDetailsRoute: AuthenticatedSessionsDetailsRoute,
   AuthenticatedSessionsListRoute: AuthenticatedSessionsListRoute,
   AuthenticatedSessionsTherapistsRoute: AuthenticatedSessionsTherapistsRoute,

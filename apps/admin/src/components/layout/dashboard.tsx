@@ -1,12 +1,12 @@
 
 
-import React, { Fragment, useEffect } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import type { FC } from "react";
 
 import { Link } from "@tanstack/react-router";
 
 import { useRouter, useLocation } from "@tanstack/react-router";
-import { useAuth } from "../../../hooks/use-auth";
+import { useAuth } from "../../hooks/use-auth";
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +17,10 @@ import {
   Settings,
   Bell,
   Search,
+  ChevronDown,
+  FileText,
+  Files,
+  FolderTree,
 } from "lucide-react";
 import { LayoutProps, MenuProps } from "@rexolute/types";
 import { ThemeProvider } from "@rexolute/ui/theme-provider";
@@ -26,13 +30,14 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from "@rexolute/ui/button";
 import { logoGreen } from "@rexolute/assets/svg";
 import { profileAvatarImg } from "@rexolute/assets/images";
-import { SharedLayoutProvider } from "../../../providers/layout-provider";
+import { SharedLayoutProvider } from "../../providers/layout-provider";
 
 const Layout: FC<LayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = useLocation({ select: (location) => location.pathname });
 
   const { session, signOut } = useAuth();
+  const [cmsOpen, setCmsOpen] = useState(pathname.startsWith("/cms"));
 
   const navigation: MenuProps[] = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -49,6 +54,10 @@ const Layout: FC<LayoutProps> = ({ children }) => {
 
   const isActive = (path: string) =>
     path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
+
+  useEffect(() => {
+    if (pathname.startsWith("/cms")) setCmsOpen(true);
+  }, [pathname]);
 
   return (
     <ThemeProvider
@@ -118,6 +127,61 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                       {item.name}
                     </Link>
                   ))}
+                  <div>
+                    <button
+                      type="button"
+                      aria-expanded={cmsOpen}
+                      onClick={() => setCmsOpen((open) => !open)}
+                      className={`flex w-full items-center rounded-md px-2 py-2 text-sm font-medium ${
+                        pathname.startsWith("/cms")
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      <Files className="mr-3 h-5 w-5 text-gray-500" />
+                      CMS
+                      <ChevronDown
+                        className={`ml-auto h-4 w-4 transition-transform ${cmsOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {cmsOpen && (
+                      <div className="ml-5 mt-1 space-y-1 border-l border-gray-200 pl-3">
+                        <Link
+                          to="/cms/new-post"
+                          className={`flex items-center rounded-md px-2 py-2 text-sm ${
+                            isActive("/cms/new-post")
+                              ? "bg-gray-100 font-medium text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          New post
+                        </Link>
+                        <Link
+                          to="/cms/posts"
+                          className={`flex items-center rounded-md px-2 py-2 text-sm ${
+                            isActive("/cms/posts")
+                              ? "bg-gray-100 font-medium text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                        >
+                          <Files className="mr-2 h-4 w-4" />
+                          Posts
+                        </Link>
+                        <Link
+                          to="/cms/categories"
+                          className={`flex items-center rounded-md px-2 py-2 text-sm ${
+                            isActive("/cms/categories")
+                              ? "bg-gray-100 font-medium text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                        >
+                          <FolderTree className="mr-2 h-4 w-4" />
+                          Categories
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </nav>
               </div>
             </div>
