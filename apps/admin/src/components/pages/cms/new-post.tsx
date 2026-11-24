@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -17,6 +17,7 @@ import { useAuth } from "../../../hooks/use-auth";
 import { toast } from "../../../hooks/use-toast";
 import { articleFormSchema, canManageArticle, isArticleDocument, parseTags, type ArticleFormFields } from "./article-form";
 import { articleImageTypes, uploadArticleImage, validArticleImage } from "./upload-article-image";
+import { localCategories, type Category } from "./local-content";
 
 export default function NewPostPage() {
   const { session } = useAuth();
@@ -44,6 +45,21 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
   };
   const form = useForm<ArticleFormFields>({ resolver: zodResolver(articleFormSchema), defaultValues: defaults });
   const { errors, isSubmitting } = form.formState;
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryError, setCategoryError] = useState("");
+  useEffect(() => {
+    try {
+      setCategories(localCategories.read());
+    } catch {
+      setCategoryError("Could not load categories from this browser.");
+    }
+  }, []);
+  const existingCategory = article?.category;
+  const categoryOptions = new Map(categories.map(({ slug, name }) => [slug, name]));
+  if (existingCategory && !categoryOptions.has(existingCategory)) {
+    categoryOptions.set(existingCategory, existingCategory);
+  }
+
   const [file, setFile] = useState<File>();
   const [editorError, setEditorError] = useState("");
   const editor = useEditor({
@@ -163,8 +179,12 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
           <h2 className="font-semibold">Article settings</h2>
           <div>
             <Label htmlFor="post-category">Category</Label>
-            <Input id="post-category" {...form.register("category")} aria-invalid={!!errors.category} aria-describedby={errors.category ? "post-category-error" : undefined} className="mt-2" />
-            <FieldError id="post-category-error" message={errors.category?.message} />
+            <select id="post-category" {...form.register("category")} aria-invalid={!!errors.category} aria-describedby={errors.category || categoryError ? "post-category-error" : undefined} className="mt-2 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="">No category</option>
+              {Array.from(categoryOptions, ([slug, name]) => <option key={slug} value={slug}>{name}</option>)}
+            </select>
+            <FieldError id="post-category-error" message={errors.category?.message || categoryError} />
+            <Link to="/cms/categories" className="mt-1 inline-block text-sm text-[#246b03] underline">Manage categories</Link>
           </div>
           <div>
             <Label htmlFor="post-tags">Tags</Label>

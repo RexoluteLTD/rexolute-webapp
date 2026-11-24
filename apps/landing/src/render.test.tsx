@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { publicArticles } from "@rexolute/api/articles";
-import type { Article } from "@rexolute/types";
+import type { Article, ArticlePage } from "@rexolute/types";
 import { routeTree } from "./routeTree.gen";
 const makeRouter = () => createRouter({ routeTree, history: createMemoryHistory({ initialEntries: ["/"] }) });
 let router = makeRouter();
@@ -79,32 +79,73 @@ async function openBlog(path: string) {
 }
 
 it("loads only published articles, paginates, and applies category and tag filters", async () => {
-  const list = vi.spyOn(publicArticles, "list").mockResolvedValueOnce({
-    items: [article, { ...article, id: "draft", title: "Private draft", state: "draft" }], total_count: 11, current_page: 1, limit: 10,
-  }).mockResolvedValueOnce({
-    items: [], total_count: 11, current_page: 2, limit: 10,
-  }).mockResolvedValue({
-    items: [article], total_count: 1, current_page: 1, limit: 10,
+  let resolveArticles!: (page: ArticlePage<Article>) => void;
+  const pending = new Promise<ArticlePage<Article>>((resolve) => { resolveArticles = resolve; });
+  const list = vi.spyOn(publicArticles, "list").mockImplementation(async ({ limit, page, category, tag }) => {
+    if (limit === 100) {
+      return {
+        items: page === 1 ? [article, { ...article, state: "draft", category: "Private category", tags: ["private"] }]
+          : [
+            { ...article, category: "Work–Life Balance", tags: ["rest", "boundaries"] },
+            { ...article, category: "stress-management" },
+          ],
+        total_count: 101, current_page: page!, limit,
+      };
+    }
+    if (page === 2) return { items: [], total_count: 11, current_page: page, limit: 10 };
+    if (category || tag) return { items: [article], total_count: 1, current_page: 1, limit: 10 };
+    return pending;
   });
   const container = await openBlog("/blog");
+  expect(container.querySelectorAll('.blog-grid-skeleton[aria-hidden="true"] > li')).toHaveLength(4);
+  expect(container.querySelector(".blog-grid-skeleton")?.parentElement?.getAttribute("aria-busy")).toBe("true");
+  await act(async () => resolveArticles({
+    items: [
+      article,
+      { ...article, id: "20019107-ce18-458c-af79-acb163346878", featureImage: "/article-cover.webp" },
+      { ...article, id: "draft", title: "Private draft", state: "draft" },
+    ], total_count: 11, current_page: 1, limit: 10,
+  }));
+  expect(container.querySelector(".blog-grid-skeleton")).toBeNull();
   expect(container.textContent).toContain(article.title);
   expect(container.textContent).not.toContain("Private draft");
   expect(container.querySelector(".blog-post-grid a")?.getAttribute("href")).toBe(`/blog/${article.id}`);
+  expect(Array.from(container.querySelectorAll(".blog-card-image"), (image) => image.getAttribute("src")))
+    .toEqual(["/svg/placeholder.svg", "/article-cover.webp"]);
+  expect(container.querySelector('.blog-filters button[aria-pressed="true"]')?.textContent).toBe("All");
+  expect(container.querySelector(".blog-filters")?.textContent).toContain("Work–Life Balance");
+  expect(container.querySelector(".blog-filters")?.textContent).not.toContain("Private category");
+  expect(container.querySelector(".blog-filters")?.textContent).not.toContain("stress-management");
+  expect(Array.from(container.querySelectorAll<HTMLOptionElement>("#blog-tag-options option"), (tag) => tag.value))
+    .toEqual(["boundaries", "rest"]);
+  expect(list).toHaveBeenCalledWith({ page: 2, limit: 100, state: "published" }, expect.any(AbortSignal));
   const next = [...container.querySelectorAll("button")].find((button) => button.textContent === "Next")!;
   await act(async () => next.click());
-  expect(list).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 2, state: "published" }), expect.any(AbortSignal));
+  expect(list).toHaveBeenCalledWith({ page: 2, state: "published", category: undefined, tag: undefined }, expect.any(AbortSignal));
   expect(container.textContent).toContain("No articles found");
-  container.querySelector<HTMLInputElement>("#blog-category")!.value = "wellbeing";
+  const category = Array.from(container.querySelectorAll<HTMLButtonElement>(".blog-filters button"))
+    .find((button) => button.textContent === "Stress Management")!;
+  await act(async () => category.click());
+  expect(category.getAttribute("aria-pressed")).toBe("true");
+  expect(list).toHaveBeenCalledWith({ page: 1, state: "published", category: "stress-management", tag: undefined }, expect.any(AbortSignal));
   container.querySelector<HTMLInputElement>("#blog-tag")!.value = "rest";
-  await act(async () => container.querySelector(".blog-filters")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
-  expect(list).toHaveBeenNthCalledWith(3, { page: 1, state: "published", category: "wellbeing", tag: "rest" }, expect.any(AbortSignal));
+  await act(async () => container.querySelector(".blog-search")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  expect(list).toHaveBeenCalledWith({ page: 1, state: "published", category: "stress-management", tag: "rest" }, expect.any(AbortSignal));
 });
 
 it("renders a published article as rich text and keeps an inaccessible draft private", async () => {
-  const get = vi.spyOn(publicArticles, "get").mockResolvedValueOnce(article);
+  let resolveArticle!: (post: Article) => void;
+  const pending = new Promise<Article>((resolve) => { resolveArticle = resolve; });
+  const get = vi.spyOn(publicArticles, "get").mockReturnValueOnce(pending);
   const container = await openBlog(`/blog/${article.id}`);
+  expect(container.querySelector(".blog-article")?.getAttribute("aria-busy")).toBe("true");
+  expect(container.querySelector('.blog-article-skeleton[aria-hidden="true"] .blog-article-image')).not.toBeNull();
+  await act(async () => resolveArticle(article));
+  expect(container.querySelector(".blog-article")?.getAttribute("aria-busy")).toBe("false");
+  expect(container.querySelector(".blog-article-skeleton")).toBeNull();
   expect(container.querySelector("h1")?.textContent).toBe(article.title);
   expect(container.querySelector(".blog-prose strong")?.textContent).toBe("Slow down.");
+  expect(container.querySelector(".blog-article-image")?.getAttribute("src")).toBe("/svg/placeholder.svg");
   expect(document.title).toContain(article.title);
 
   const draftId = "20019107-ce18-458c-af79-acb163346878";

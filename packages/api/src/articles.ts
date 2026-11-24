@@ -17,10 +17,18 @@ const likesPath = (id: string, commentId?: string) => `${commentId ? commentPath
 function reads(client: typeof publicApi) {
   return {
     async list(params: ArticleQuery, signal?: AbortSignal) {
-      return (await client.get<Success<ArticlePage<Article>>>(base, { params, signal })).data.data;
+      const { data } = await client.get<Success<ArticlePage<Article>>>(base, { params, signal });
+      if (data?.status !== "success" || !Array.isArray(data.data?.items)) {
+        throw new Error("The article service returned an unexpected response.");
+      }
+      return data.data;
     },
     async get(id: string, signal?: AbortSignal) {
-      return (await client.get<Success<Article>>(articlePath(id), { signal })).data.data;
+      const { data } = await client.get<Success<Article>>(articlePath(id), { signal });
+      if (data?.status !== "success" || typeof data.data?.id !== "string") {
+        throw new Error("The article service returned an unexpected response.");
+      }
+      return data.data;
     },
     async listComments(id: string, params: ArticlePagination, parentId?: string, signal?: AbortSignal) {
       return (await client.get<Success<ArticlePage<ArticleComment>>>(commentsPath(id, parentId), { params, signal })).data.data;

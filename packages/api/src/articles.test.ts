@@ -6,12 +6,18 @@ import { publicApi } from "./transport";
 const base = "/cms/posts/article";
 
 it("keeps public published reads on the unauthenticated client and draft reads on the authenticated client", async () => {
-  const read = vi.spyOn(publicApi, "get").mockResolvedValue({ data: { data: { id: "article" } } });
-  const adminRead = vi.spyOn(api, "get").mockResolvedValue({ data: { data: { items: [] } } });
+  const read = vi.spyOn(publicApi, "get").mockResolvedValue({ data: { status: "success", data: { id: "article" } } });
+  const adminRead = vi.spyOn(api, "get").mockResolvedValue({ data: { status: "success", data: { items: [] } } });
   await expect(publicArticles.get("article")).resolves.toMatchObject({ id: "article" });
   expect(read).toHaveBeenCalledWith(`${base}/article`, { signal: undefined });
   await authenticatedArticles.list({ state: "draft", page: 2, category: "wellbeing" });
   expect(adminRead).toHaveBeenCalledWith(base, { params: { state: "draft", page: 2, category: "wellbeing" }, signal: undefined });
+});
+
+it("rejects a frontend HTML fallback for article list and detail requests", async () => {
+  vi.spyOn(publicApi, "get").mockResolvedValue({ data: "<!doctype html><title>Rexolute</title>" });
+  await expect(publicArticles.list({ state: "published" })).rejects.toThrow("unexpected response");
+  await expect(publicArticles.get("article")).rejects.toThrow("unexpected response");
 });
 
 it("uses the article comment and reply routes with plain text and paginated public reads", async () => {
