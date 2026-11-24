@@ -21,6 +21,7 @@ import {
   FileText,
   Files,
   FolderTree,
+  Tags,
 } from "lucide-react";
 import { LayoutProps, MenuProps } from "@rexolute/types";
 import { ThemeProvider } from "@rexolute/ui/theme-provider";
@@ -179,6 +180,17 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                         >
                           <FolderTree className="mr-2 h-4 w-4" />
                           Categories
+                        </Link>
+                        <Link
+                          to="/cms/tags"
+                          className={`flex items-center rounded-md px-2 py-2 text-sm ${
+                            isActive("/cms/tags")
+                              ? "bg-gray-100 font-medium text-gray-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                        >
+                          <Tags className="mr-2 h-4 w-4" />
+                          Tags
                         </Link>
                       </div>
                     )}

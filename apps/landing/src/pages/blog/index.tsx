@@ -4,14 +4,9 @@ import { Search } from "lucide-react";
 import { articleErrorMessage, publicArticles } from "@rexolute/api/articles";
 import { Skeleton } from "@rexolute/ui/skeleton";
 import { blogImagePlaceholder } from "../../lib/blog";
-import { loadBlogFilters } from "../../lib/blog-filters";
+import { loadArticleCategories, loadArticleTags } from "../../lib/blog-filters";
 import { BlogByline } from "./byline";
 import { useBlogRequest } from "../../lib/use-blog-request";
-
-function categoryLabel(category: string) {
-  if (!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(category)) return category;
-  return category.split(/[-_]/).map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
-}
 
 export default function BlogIndexPage() {
   const [query, setQuery] = useState({ page: 1, category: "", tag: "" });
@@ -19,9 +14,11 @@ export default function BlogIndexPage() {
     page: query.page, state: "published", category: query.category || undefined, tag: query.tag || undefined,
   }, signal), [query]);
   const { data, error, loading, retry } = useBlogRequest(load);
-  const filters = useBlogRequest(loadBlogFilters);
+  const categories = useBlogRequest(loadArticleCategories);
+  const tags = useBlogRequest(loadArticleTags);
   const articles = data?.items.filter((article) => article.state === "published") ?? [];
   const pageCount = data ? Math.max(1, Math.ceil(data.total_count / data.limit)) : 1;
+  const categoryNames = new Map(categories.data?.map(({ slug, name }) => [slug, name]));
   const tagError = error?.errors?.tag?.join(" ");
 
   function filterTag(event: FormEvent<HTMLFormElement>) {
@@ -41,31 +38,36 @@ export default function BlogIndexPage() {
           <input id="blog-tag" name="tag" type="search" list="blog-tag-options" placeholder="Search by tag" aria-invalid={!!tagError} aria-describedby={tagError ? "blog-tag-error" : undefined} />
           <button type="submit">Search</button>
           <datalist id="blog-tag-options">
-            {filters.data?.tags.map((tag) => <option key={tag} value={tag} />)}
+            {tags.data?.map(({ id, name, slug }) => <option key={id} value={slug} label={name} />)}
           </datalist>
         </form>
+        {tags.error && (
+          <p className="blog-tag-error" role="alert">
+            Could not load tag suggestions. <button type="button" className="underline" onClick={tags.retry}>Retry tags</button>
+          </p>
+        )}
         {tagError && <p className="blog-tag-error" id="blog-tag-error" role="alert">{tagError}</p>}
         <div className="blog-library-layout">
           <aside className="blog-filters" aria-labelledby="blog-categories">
             <h3 id="blog-categories">Categories</h3>
-            <p className="sr-only" role="status">{filters.loading ? "Loading categories and tags…" : ""}</p>
-            <ul aria-busy={filters.loading}>
+            <p className="sr-only" role="status">{categories.loading ? "Loading categories…" : ""}</p>
+            <ul aria-busy={categories.loading}>
               <li>
                 <button type="button" aria-pressed={!query.category} onClick={() => setQuery({ ...query, page: 1, category: "" })}>All</button>
               </li>
-              {filters.loading && ["w-20", "w-28", "w-24"].map((width) => (
+              {categories.loading && ["w-20", "w-28", "w-24"].map((width) => (
                 <li key={width} className="flex min-h-11 items-center" aria-hidden="true"><Skeleton className={`h-4 ${width}`} /></li>
               ))}
-              {filters.data?.categories.map((category) => (
-                <li key={category}>
-                  <button type="button" aria-pressed={query.category === category} onClick={() => setQuery({ ...query, page: 1, category })}>{categoryLabel(category)}</button>
+              {categories.data?.map(({ id, slug, name }) => (
+                <li key={id}>
+                  <button type="button" aria-pressed={query.category === slug} onClick={() => setQuery({ ...query, page: 1, category: slug })}>{name}</button>
                 </li>
               ))}
             </ul>
-            {filters.error && (
+            {categories.error && (
               <div role="alert">
-                <p>Could not load categories and tags.</p>
-                <button type="button" onClick={filters.retry}>Retry filters</button>
+                <p>Could not load categories.</p>
+                <button type="button" onClick={categories.retry}>Retry categories</button>
               </div>
             )}
           </aside>
@@ -83,7 +85,7 @@ export default function BlogIndexPage() {
                         <Link className="blog-card-link" to="/blog/$slug" params={{ slug: article.id }}>
                           <img className="blog-card-image" src={article.featureImage || blogImagePlaceholder} alt="" width={710} height={470} loading="lazy" />
                           <div className="blog-card-content">
-                            {article.category && <p className="blog-post-meta"><span className="blog-category">{article.category}</span></p>}
+                            {article.category && <p className="blog-post-meta"><span className="blog-category">{categoryNames.get(article.category) ?? article.category}</span></p>}
                             <h3>{article.title}</h3>
                             <BlogByline username={article.username} date={article.created_at} />
                           </div>

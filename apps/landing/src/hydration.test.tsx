@@ -9,6 +9,7 @@ import { blogArticleShellPath } from "./lib/blog";
 vi.mock("@rexolute/api/articles", () => ({
   publicArticles: { list: () => new Promise(() => {}), get: () => new Promise(() => {}) },
 }));
+vi.mock("@rexolute/api/post-catalogs", () => ({ postCatalogs: { listAll: () => new Promise(() => {}) } }));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 it.each(["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog", "/blog/10019107-ce18-458c-af79-acb163346878", "/missing"])("hydrates %s without replacing its HTML", async (path) => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});

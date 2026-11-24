@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -11,13 +11,12 @@ import type { Article, ArticleInput } from "@rexolute/types";
 import Head from "@rexolute/ui/head";
 import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
-import { Textarea } from "@rexolute/ui/textarea";
 import { Label } from "@rexolute/ui/label";
 import { useAuth } from "../../../hooks/use-auth";
 import { toast } from "../../../hooks/use-toast";
-import { articleFormSchema, canManageArticle, isArticleDocument, parseTags, type ArticleFormFields } from "./article-form";
+import { articleFormSchema, canManageArticle, isArticleDocument, type ArticleFormFields } from "./article-form";
 import { articleImageTypes, uploadArticleImage, validArticleImage } from "./upload-article-image";
-import { localCategories, type Category } from "./local-content";
+import { PostCatalogFields } from "./post-catalog-fields";
 
 export default function NewPostPage() {
   const { session } = useAuth();
@@ -40,26 +39,11 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
   const defaults: ArticleFormFields = {
     title: article?.title ?? "",
     category: article?.category ?? "",
-    tags: article?.tags?.join("\n") ?? "",
+    tags: article?.tags ?? [],
     featureImage: article?.featureImage ?? "",
   };
   const form = useForm<ArticleFormFields>({ resolver: zodResolver(articleFormSchema), defaultValues: defaults });
   const { errors, isSubmitting } = form.formState;
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryError, setCategoryError] = useState("");
-  useEffect(() => {
-    try {
-      setCategories(localCategories.read());
-    } catch {
-      setCategoryError("Could not load categories from this browser.");
-    }
-  }, []);
-  const existingCategory = article?.category;
-  const categoryOptions = new Map(categories.map(({ slug, name }) => [slug, name]));
-  if (existingCategory && !categoryOptions.has(existingCategory)) {
-    categoryOptions.set(existingCategory, existingCategory);
-  }
-
   const [file, setFile] = useState<File>();
   const [editorError, setEditorError] = useState("");
   const editor = useEditor({
@@ -101,10 +85,9 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
       }
     }
 
-    const tags = parseTags(fields.tags);
     try {
       if (!article) {
-        await onSaved(await authenticatedArticles.create({ title: fields.title, content, category: fields.category, tags, featureImage, state: "draft" }));
+        await onSaved(await authenticatedArticles.create({ title: fields.title, content, category: fields.category, tags: fields.tags, featureImage, state: "draft" }));
         return;
       }
 
@@ -112,7 +95,7 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
       if (fields.title !== defaults.title) patch.title = fields.title;
       if (fields.category !== defaults.category) patch.category = fields.category;
       if (featureImage !== defaults.featureImage) patch.featureImage = featureImage;
-      if (fields.tags !== defaults.tags && JSON.stringify(tags) !== JSON.stringify(article.tags ?? [])) patch.tags = tags;
+      if (fields.tags.length !== defaults.tags.length || fields.tags.some((tag, index) => tag !== defaults.tags[index])) patch.tags = fields.tags;
       if (!editor.state.doc.eq(editor.schema.nodeFromJSON(article.content))) patch.content = content;
       if (!Object.keys(patch).length) {
         form.setError("root.server", { message: "Make a change before saving." });
@@ -125,6 +108,8 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
       for (const [name, messages] of invalidFields) {
         if (name === "title" || name === "category" || name === "tags" || name === "featureImage") {
           form.setError(name, { message: messages.join(" ") });
+        } else if (name.startsWith("tags.")) {
+          form.setError("tags", { message: messages.join(" ") });
         } else if (name === "content") {
           form.setError("root.content", { message: messages.join(" ") });
         } else {
@@ -177,21 +162,15 @@ export function ArticleEditor({ article, onSaved }: { article?: Article; onSaved
         </div>
         <aside className="space-y-4 rounded-md border bg-white p-4 self-start">
           <h2 className="font-semibold">Article settings</h2>
-          <div>
-            <Label htmlFor="post-category">Category</Label>
-            <select id="post-category" {...form.register("category")} aria-invalid={!!errors.category} aria-describedby={errors.category || categoryError ? "post-category-error" : undefined} className="mt-2 block h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-              <option value="">No category</option>
-              {Array.from(categoryOptions, ([slug, name]) => <option key={slug} value={slug}>{name}</option>)}
-            </select>
-            <FieldError id="post-category-error" message={errors.category?.message || categoryError} />
-            <Link to="/cms/categories" className="mt-1 inline-block text-sm text-[#246b03] underline">Manage categories</Link>
-          </div>
-          <div>
-            <Label htmlFor="post-tags">Tags</Label>
-            <Textarea id="post-tags" {...form.register("tags")} rows={3} aria-invalid={!!errors.tags} aria-describedby="post-tags-hint post-tags-error" className="mt-2" />
-            <p id="post-tags-hint" className="mt-1 text-sm text-muted-foreground">One tag per line.</p>
-            <FieldError id="post-tags-error" message={errors.tags?.message} />
-          </div>
+          <PostCatalogFields
+            postType={article?.postType ?? "article"}
+            category={form.watch("category")}
+            tags={form.watch("tags")}
+            onCategoryChange={(category) => form.setValue("category", category, { shouldValidate: true })}
+            onTagsChange={(tags) => form.setValue("tags", tags, { shouldValidate: true })}
+            categoryError={errors.category?.message}
+            tagsError={errors.tags?.message ?? errors.tags?.find?.((tag) => tag?.message)?.message}
+          />
           <div>
             <Label htmlFor="post-image">Featured image</Label>
             {featureImage && <img src={featureImage} alt="Current featured image" className="mt-2 h-auto w-full rounded-md" />}

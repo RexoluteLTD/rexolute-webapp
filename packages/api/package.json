@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./articles": "./src/articles.ts",
+    "./post-catalogs": "./src/post-catalogs.ts",
     "./axios": "./src/axios.ts",
     "./error": "./src/error.ts",
     ".": "./src/index.ts",

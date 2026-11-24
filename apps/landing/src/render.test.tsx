@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { publicArticles } from "@rexolute/api/articles";
+import { postCatalogs } from "@rexolute/api/post-catalogs";
 import type { Article, ArticlePage } from "@rexolute/types";
 import { routeTree } from "./routeTree.gen";
 const makeRouter = () => createRouter({ routeTree, history: createMemoryHistory({ initialEntries: ["/"] }) });
@@ -81,17 +82,14 @@ async function openBlog(path: string) {
 it("loads only published articles, paginates, and applies category and tag filters", async () => {
   let resolveArticles!: (page: ArticlePage<Article>) => void;
   const pending = new Promise<ArticlePage<Article>>((resolve) => { resolveArticles = resolve; });
-  const list = vi.spyOn(publicArticles, "list").mockImplementation(async ({ limit, page, category, tag }) => {
-    if (limit === 100) {
-      return {
-        items: page === 1 ? [article, { ...article, state: "draft", category: "Private category", tags: ["private"] }]
-          : [
-            { ...article, category: "Work–Life Balance", tags: ["rest", "boundaries"] },
-            { ...article, category: "stress-management" },
-          ],
-        total_count: 101, current_page: page!, limit,
-      };
-    }
+  const catalog = vi.spyOn(postCatalogs, "list").mockImplementation(async (_postType, resource, { page }) => {
+    const base = { postType: "article" as const, description: "", created_at: article.created_at, updated_at: article.updated_at };
+    const entry = resource === "categories"
+      ? page === 1 ? { id: "c1", name: "Wellbeing", slug: "wellbeing" } : { id: "c2", name: "Managing Stress", slug: "stress-management" }
+      : { id: "t1", name: "Rest and Recovery", slug: "rest" };
+    return { items: [{ ...base, ...entry }], total_count: resource === "categories" ? 101 : 1, current_page: page!, limit: 100 };
+  });
+  const list = vi.spyOn(publicArticles, "list").mockImplementation(async ({ page, category, tag }) => {
     if (page === 2) return { items: [], total_count: 11, current_page: page, limit: 10 };
     if (category || tag) return { items: [article], total_count: 1, current_page: 1, limit: 10 };
     return pending;
@@ -113,18 +111,20 @@ it("loads only published articles, paginates, and applies category and tag filte
   expect(Array.from(container.querySelectorAll(".blog-card-image"), (image) => image.getAttribute("src")))
     .toEqual(["/svg/placeholder.svg", "/article-cover.webp"]);
   expect(container.querySelector('.blog-filters button[aria-pressed="true"]')?.textContent).toBe("All");
-  expect(container.querySelector(".blog-filters")?.textContent).toContain("Work–Life Balance");
+  expect(container.querySelector(".blog-filters")?.textContent).toContain("Managing Stress");
   expect(container.querySelector(".blog-filters")?.textContent).not.toContain("Private category");
   expect(container.querySelector(".blog-filters")?.textContent).not.toContain("stress-management");
   expect(Array.from(container.querySelectorAll<HTMLOptionElement>("#blog-tag-options option"), (tag) => tag.value))
-    .toEqual(["boundaries", "rest"]);
-  expect(list).toHaveBeenCalledWith({ page: 2, limit: 100, state: "published" }, expect.any(AbortSignal));
+    .toEqual(["rest"]);
+  expect(container.querySelector("#blog-tag-options option")?.getAttribute("label")).toBe("Rest and Recovery");
+  expect(catalog).toHaveBeenCalledWith("article", "categories", { page: 2, limit: 100 }, expect.any(AbortSignal));
+  expect(catalog).toHaveBeenCalledWith("article", "tags", { page: 1, limit: 100 }, expect.any(AbortSignal));
   const next = [...container.querySelectorAll("button")].find((button) => button.textContent === "Next")!;
   await act(async () => next.click());
   expect(list).toHaveBeenCalledWith({ page: 2, state: "published", category: undefined, tag: undefined }, expect.any(AbortSignal));
   expect(container.textContent).toContain("No articles found");
   const category = Array.from(container.querySelectorAll<HTMLButtonElement>(".blog-filters button"))
-    .find((button) => button.textContent === "Stress Management")!;
+    .find((button) => button.textContent === "Managing Stress")!;
   await act(async () => category.click());
   expect(category.getAttribute("aria-pressed")).toBe("true");
   expect(list).toHaveBeenCalledWith({ page: 1, state: "published", category: "stress-management", tag: undefined }, expect.any(AbortSignal));
