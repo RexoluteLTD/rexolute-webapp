@@ -66,11 +66,22 @@
 .page-intro { max-width: 46rem; margin: 0 auto 2.5rem; text-align: center; }
 .page-intro p { margin-top: 1.25rem; color: #4b5563; font-size: 1.0625rem; }
 .about-image { width: 100%; max-height: 560px; object-fit: cover; border-radius: .75rem; }
-.vision-layout { margin-top: 3rem; align-items: start; }
 .prose-copy p + p { margin-top: 1rem; }
-.values-grid { display: grid; gap: 2rem; }
-.values-grid p { margin-top: .75rem; }
-.about-cta { margin: 2.5rem auto 0; }
+.about-page .page-intro .eyebrow { color: var(--landing-green); font-size: .875rem; }
+.about-page .page-intro .about-lead { font-size: clamp(1.15rem, 2.2vw, 1.5rem); }
+.about-intro-copy { max-width: 48rem; margin: clamp(1.5rem, 4vw, 3rem) auto 0; font-size: 1.0625rem; }
+.about-split { align-items: start; }
+.about-page > .landing-section + .about-split { padding-top: 0; }
+.about-group, .about-three-column { display: grid; gap: clamp(1.5rem, 3vw, 2.5rem); }
+.about-copy :is(h2, h3) { margin-bottom: .85rem; }
+.about-numbered-list, .about-beliefs { padding-inline-start: 1.5rem; }
+.about-numbered-list { list-style: decimal; margin-bottom: 1rem; }
+.about-beliefs { list-style: disc; }
+.about-numbered-list li + li, .about-beliefs li + li { margin-top: .65rem; }
+.landing-app .about-inline-link { display: inline-block; margin-top: .5rem; color: var(--landing-green); text-decoration: underline; }
+.about-closing { margin-bottom: 0; }
+.about-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-block: 1.5rem; }
+.about-actions .landing-button { border-color: #fff; }
 .contact-grid { display: grid; gap: 1.5rem; align-items: start; }
 .contact-info { background: #111; color: #fff; border-radius: .75rem; padding: clamp(1.25rem, 3vw, 2rem); }
 .contact-info p { margin-top: 1rem; }
@@ -99,7 +110,7 @@
 .landing-app .button-light:hover { background: #eaf3e6; }
 @media (min-width: 600px) {
   .landing-container { width: min(100% - 3rem, 1240px); }
-  .form-row, .support-grid, .values-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-row, .support-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .header-cta { padding-inline: 1.5rem; font-size: 1rem; }
   .footer-top { grid-template-columns: 2fr 1fr; }
 }
@@ -112,7 +123,7 @@
 @media (min-width: 1024px) {
   .landing-container { width: min(100% - 5rem, 1240px); }
   .hero-layout { min-height: min(680px, 100svh - 160px); }
-  .values-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .about-three-column { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-height: 500px) { .landing-header { position: relative; } }
 @media (prefers-reduced-motion: reduce) { .landing-app *, .landing-app *::before, .landing-app *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

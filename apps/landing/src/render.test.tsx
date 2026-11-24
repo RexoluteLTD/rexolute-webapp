@@ -16,7 +16,7 @@ it("renders landing through its generated route tree", async () => {
   unmount = () => root.unmount();
   router.update({ history: createMemoryHistory({ initialEntries: ["/"] }) });
   await act(async () => { await router.load(); root.render(<RouterProvider router={router} />); });
-  await vi.waitFor(() => expect(container.textContent).toContain("Starts Here"));
+  await vi.waitFor(() => expect(container.querySelector("h1")?.textContent).toBe("Mental health support built for Africans"));
 });
 
 it("offers a keyboard-accessible mobile menu and restores focus on Escape", async () => {

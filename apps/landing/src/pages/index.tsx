@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Accessibility, ArrowRight, Calendar, Check, Sparkles, Users } from "lucide-react";
+import { Accessibility, ArrowRight, Calendar, Check, Sparkles, Wallet } from "lucide-react";
 import { appUrls } from "@rexolute/utils/app-urls";
 
 const steps = [
-  { title: "Explore the support you need", text: "Think about what brings you here, whether it is stress, relationships, or simply wanting space to talk." },
-  { title: "Share a little about yourself", text: "Reflect on your goals and the kind of support that would feel right for you." },
-  { title: "Find a therapist", text: "Look for an approach and a connection that help you feel comfortable being yourself." },
-  { title: "Make space for your wellbeing", text: "Take the next step at your own pace, one conversation at a time." },
+  { title: "Get started online", text: "Sign in to your Rexolute account." },
+  { title: "Tell us what you need", text: "Share as much or as little as you’re comfortable with." },
+  { title: "Find a therapist who suits you", text: "Look for someone who understands your circumstances and the kind of support you want." },
+  { title: "Start talking", text: "Make time for a private, one-to-one conversation from a place that feels comfortable." },
 ];
 
 export default function HomePage() {
@@ -15,8 +15,8 @@ export default function HomePage() {
       <div className="landing-container split-layout hero-layout">
         <div>
           <Sparkles className="hero-spark" size={42} aria-hidden="true" />
-          <h1 id="hero-title">Your Journey To Better <span className="gold-text">Mental Wellness</span> Starts Here</h1>
-          <p className="hero-description">Find professional therapy services online, anytime, anywhere. Take your next step towards feeling more like yourself.</p>
+          <h1 id="hero-title">Mental health support <span className="gold-text">built for Africans</span></h1>
+          <p className="hero-description">You don’t have to hold it all together alone. Find online therapy with people who understand where you’re coming from.</p>
           <a href={`${appUrls.client}/login`} className="landing-button">Book a therapist <ArrowRight size={20} aria-hidden="true" /></a>
         </div>
         <img src="/images/pic1.jpg" alt="People connecting with professionals through online appointments" width={753} height={606} fetchPriority="high" className="hero-image" />
@@ -27,8 +27,8 @@ export default function HomePage() {
       <div className="landing-container split-layout">
         <img src="/images/pic2.jpg" alt="Two people embracing during a support group gathering" width={580} height={615} loading="lazy" decoding="async" className="section-image therapy-image" />
         <div>
-          <h2 id="therapy-title">Why therapy is important for you</h2>
-          <p className="section-description">You do not need to have everything figured out before asking for support. Therapy offers time to explore what you are feeling, understand your patterns, and work towards changes that matter to you.</p>
+          <h2 id="therapy-title">A space to be heard</h2>
+          <p className="section-description">Asking for help takes courage. Therapy offers a place to talk about what you’re carrying, explore how you’re feeling and decide what you want to work on, at your own pace.</p>
           <ul className="benefit-list">
             {["Make sense of stress and anxious thoughts", "Build self-awareness and self-esteem", "Navigate life's changes and challenges", "Explore healthier relationships", "Practise communication and coping skills"].map((text) => <li key={text}><Check size={22} aria-hidden="true" /><span>{text}</span></li>)}
           </ul>
@@ -43,15 +43,18 @@ export default function HomePage() {
     <section className="landing-section" aria-labelledby="why-title">
       <div className="landing-container split-layout">
         <div>
-          <h2 id="why-title">Why you should choose us.</h2>
-          <p className="section-description">Finding support should feel approachable. We bring the next steps together so you can focus on what matters to you.</p>
+          <h2 id="why-title">Our promise</h2>
+          <p className="section-description">Getting help should feel normal and within reach. These are the three A’s that guide Rexolute.</p>
           <div className="feature-list">
             {[
-              { Icon: Accessibility, title: "Support within reach", text: "Explore online therapy from a space where you feel comfortable, without the journey to a waiting room." },
-              { Icon: Users, title: "A connection that matters", text: "Every experience is different. Find a therapist whose approach fits the conversations you want to have." },
-              { Icon: Calendar, title: "Time for your wellbeing", text: "Make room for support alongside work, family, and the rest of everyday life." },
+              { Icon: Wallet, title: "Affordable", text: "Quality care shouldn’t be a luxury. We aim to keep the cost of support within reach." },
+              { Icon: Accessibility, title: "Accessible", text: "Talk to a therapist online from a place that works for you, without travelling to a waiting room." },
+              { Icon: Calendar, title: "Available", text: "Find time for support around work, family and the rest of everyday life." },
             ].map(({ Icon, title, text }) => <div key={title}><h3><Icon size={24} aria-hidden="true" />{title}</h3><p>{text}</p></div>)}
           </div>
+          <Link to="/about-us" className="green-text mt-4 inline-flex min-h-11 items-center gap-2 font-semibold underline">
+            More about Rexolute <ArrowRight size={18} aria-hidden="true" />
+          </Link>
         </div>
         <img src="/images/pic6.jpg" alt="" width={603} height={623} loading="lazy" decoding="async" className="section-image" />
       </div>
@@ -69,19 +72,26 @@ export default function HomePage() {
 
     <section className="landing-section" aria-labelledby="support-title">
       <div className="landing-container">
-        <p className="eyebrow">ROOM FOR YOUR EXPERIENCE</p>
-        <h2 id="support-title">Support for the things you carry</h2>
+        <h2 id="support-title">Support for you and your workplace</h2>
         <div className="support-grid">
-          <article className="support-card"><h3>When life feels overwhelming</h3><p>A crowded mind, a difficult change, or a week that takes more than it gives. Therapy can be a place to slow down, name what is happening, and explore a way forward.</p></article>
-          <article className="support-card"><h3>When you want to understand yourself</h3><p>You do not have to wait for a crisis to be curious about your wellbeing. Make space to reflect on your relationships, recognise patterns, and consider what you need next.</p></article>
+          <article className="support-card">
+            <h3>Rexolute Care</h3>
+            <p>Private, one-to-one sessions with certified therapists who understand the African context. Talk through what’s on your mind, from grief and relationship struggles to burnout.</p>
+          </article>
+          <article className="support-card">
+            <h3>Rexolute Training</h3>
+            <p>Workplace wellbeing programmes for companies, schools and community organisations. Topics include mental health awareness, stress and burnout prevention, and leadership wellbeing.</p>
+            <Link to="/contact-us" className="green-text inline-flex min-h-11 items-center font-semibold underline">Ask about workplace training</Link>
+          </article>
         </div>
+        <p className="section-description">Explore <Link to="/blog" className="green-text font-semibold underline">our free mental wellness articles</Link> for practical ways to learn and reflect at your own pace.</p>
       </div>
     </section>
 
     <section className="landing-section green-section" aria-labelledby="online-title">
       <div className="landing-container">
         <div className="app-panel split-layout">
-          <div><h2 id="online-title">A little more space for <span className="green-text">your wellbeing</span></h2><p className="section-description">Start your journey with Rexolute online. Explore support from your phone, tablet, or computer, at a pace that feels right for you.</p><a href={`${appUrls.client}/login`} className="landing-button">Get started online <ArrowRight size={20} aria-hidden="true" /></a></div>
+          <div><h2 id="online-title">Take the first step today</h2><p className="section-description">You don’t need to have the right words. Get started from your phone, tablet or computer, at a pace that feels right for you.</p><a href={`${appUrls.client}/login`} className="landing-button">Get started online <ArrowRight size={20} aria-hidden="true" /></a></div>
           <img src="/images/rexolute-mock8.webp" alt="Preview of the Rexolute mobile experience" width={1072} height={1080} loading="lazy" decoding="async" className="app-preview" />
         </div>
       </div>

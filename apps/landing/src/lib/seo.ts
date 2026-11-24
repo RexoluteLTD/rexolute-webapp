@@ -9,8 +9,8 @@ export const publicPaths = [
 ];
 
 const pages: Record<string, { title: string; description: string; noindex?: boolean }> = {
-  "/": { title: "Online Therapy & Mental Wellness | Rexolute", description: "Find space to be heard with Rexolute. Explore online therapy, mental wellness support, and a thoughtful next step towards your wellbeing." },
-  "/about-us": { title: "About Us | Therapy with a Human Approach | Rexolute", description: "Learn about Rexolute's purpose: making therapy more approachable through meaningful conversations, individual experiences, and support that fits everyday life." },
+  "/": { title: "Online Therapy & Mental Health Support for Africans | Rexolute", description: "Rexolute offers online therapy for individuals, workplace wellbeing programmes and free mental wellness articles for Africans at home and abroad." },
+  "/about-us": { title: "About Us | Mental Health Support for Africans | Rexolute", description: "Learn how Rexolute makes mental health support more affordable, accessible and available through individual therapy, workplace wellbeing and free resources." },
   "/contact-us": { title: "Contact Rexolute | Therapy & Platform Enquiries", description: "Contact the Rexolute team at hello@example.co with questions about getting started, the platform, partnerships, or therapist opportunities." },
   "/blog": { title: "Mental Wellness Blog | Rexolute", description: "Browse articles on relationships, coping strategies, parenting, work-life balance and everyday mental wellness.", noindex: true },
   "/privacy": { title: "Privacy Information | Rexolute", description: "How the Rexolute public website handles contact enquiries and how its privacy information differs from authenticated therapy services.", noindex: true },
