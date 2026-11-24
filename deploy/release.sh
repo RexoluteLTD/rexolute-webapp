@@ -35,12 +35,8 @@ fi
 [[ -r "$release/deploy/compose.yml" ]] || fail 'Missing or unreadable deploy/compose.yml release manifest.'
 image=$(cat -- "$release/images/$APP.txt")
 [[ "$image" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]] || fail "images/$APP.txt must contain a GHCR image with a sha256 digest and no extra whitespace."
-app_domain=$BASE_DOMAIN
-if [[ "$TARGET" == development ]]; then
-  app_domain="$APP-dev.$BASE_DOMAIN"
-elif [[ "$APP" != landing ]]; then
-  app_domain="$APP.$BASE_DOMAIN"
-fi
+source "$release/deploy/frontend-config.sh"
+app_domain=$(frontend_domain "$TARGET" "$APP" "$BASE_DOMAIN")
 # Preserve project/router names so moving directories updates existing containers.
 stack="rexolute-$TARGET-$APP"
 

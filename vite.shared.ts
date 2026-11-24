@@ -29,7 +29,7 @@ function pdfWorkerPlugin(appRoot: string): Plugin {
 export function createAppConfig(configUrl: string) {
   const appRoot = dirname(fileURLToPath(configUrl));
   return defineConfig(({ mode }) => {
-    // Local-only proxy: the browser still calls its own origin at /v1/.
+    // Optional local proxy for same-origin requests.
     const { API_PROXY_TARGET } = loadEnv(mode, appRoot, "API_PROXY_");
     const proxy = API_PROXY_TARGET ? {
       "/v1/": { target: API_PROXY_TARGET, changeOrigin: true },

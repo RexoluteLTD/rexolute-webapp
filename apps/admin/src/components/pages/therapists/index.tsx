@@ -1,11 +1,11 @@
 import React, { Fragment } from "react";
 import { Calendar, ChevronDown, Download, Filter, Search } from "lucide-react";
 import Head from "@rexolute/ui/head";
-import { UserTable, UserTabs } from "../../components/admin/dashboard/index";
+import { UserTable, UserTabs } from "../../dashboard";
 import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@rexolute/ui/tabs";
-import { TherapistStatsCards } from "../../components/admin/dashboard/index";
+import { TherapistStatsCards } from "../../dashboard";
 import { TabsContent } from "@radix-ui/react-tabs";
 
 const Page = () => {

@@ -1,21 +1,10 @@
-import React, { FC, Fragment } from "react";
-import { Link } from "@tanstack/react-router";
-
-
+import { type ReactNode } from "react";
 import { appUrls } from "@rexolute/utils/app-urls";
-import { PageProps } from "@rexolute/types";
 import Head from "@rexolute/ui/head";
-import {
-  CreatePasswordForm,
-  CreatePINForm,
-  ForgotPasswordForm,
-  LoginForm,
-  VerifyOTPForm,
-} from "../forms";
 
-const AuthLayout: FC<PageProps> = ({ slug, query, title }) => {
+export default function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Fragment>
+    <>
       <Head title={title} />
 
       <div className="flex min-h-screen">
@@ -43,24 +32,10 @@ const AuthLayout: FC<PageProps> = ({ slug, query, title }) => {
           </div>
         </div>
 
-        {/* Right side - Login form */}
         <div className="flex-1 flex w-full flex-col items-center justify-center p-8">
-          <div className="w-full max-w-md">
-            {slug === "create-pin" && <CreatePINForm />}
-            {slug === "create-password" && <CreatePasswordForm />}
-            {slug === "login" && <LoginForm />}
-            {slug === "forgot-password" && <ForgotPasswordForm />}
-            {slug === "verify-otp" && (
-              <VerifyOTPForm
-                provider={query.provider ?? "email"}
-                identity={query.identity ?? "someone@mail.com"}
-              />
-            )}
-          </div>
+          <div className="w-full max-w-md">{children}</div>
         </div>
       </div>
-    </Fragment>
+    </>
   );
-};
-
-export default AuthLayout;
+}

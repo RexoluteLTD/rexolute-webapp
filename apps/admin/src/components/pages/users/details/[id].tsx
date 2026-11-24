@@ -6,7 +6,7 @@ import { Button } from "@rexolute/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@rexolute/ui/breadcrumb";
 import { Card, CardContent } from "@rexolute/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rexolute/ui/tabs";
-import { SessionCard } from "../../../components/admin/sessions";
+import { SessionCard } from "../../../sessions";
 import { Fragment } from "react";
 import Head from "@rexolute/ui/head";
 

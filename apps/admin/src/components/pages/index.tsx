@@ -12,7 +12,7 @@ import {
   SessionTypeBreakdown,
   OtherStats,
   TopPerformers,
-} from "../components/admin/dashboard/index";
+} from "../dashboard";
 import { Button } from "@rexolute/ui/button";
 
 interface Task {

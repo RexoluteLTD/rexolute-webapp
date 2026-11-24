@@ -3,8 +3,8 @@ import { Calendar, ChevronDown, Download, Filter, Search } from "lucide-react";
 import Head from "@rexolute/ui/head";
 import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
-import { SessionStatsCards } from "../../components/admin/dashboard/index";
-import { SessionCard } from "../../components/admin/sessions";
+import { SessionStatsCards } from "../../dashboard";
+import { SessionCard } from "../../sessions";
 
 const Page = () => {
   const items20 = Array(20).fill("item");

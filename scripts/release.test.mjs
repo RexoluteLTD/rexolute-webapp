@@ -22,8 +22,9 @@ function fixture(deployment) {
   mkdirSync(join(release, "deploy"), { recursive: true });
   mkdirSync(join(release, "images"));
   mkdirSync(join(root, "bin"));
-  copyFileSync("deploy/release.sh", join(release, "deploy/release.sh"));
-  copyFileSync("deploy/compose.yml", join(release, "deploy/compose.yml"));
+  for (const file of ["compose.yml", "release.sh", "frontend-config.sh"]) {
+    copyFileSync(`deploy/${file}`, join(release, "deploy", file));
+  }
   writeFileSync(join(release, `images/${app}.txt`), `ghcr.io/example/rexolute/${app}@sha256:${"a".repeat(64)}\n`);
   // Existing state belonging to every other app/environment must remain intact.
   for (const other of deployments.filter((entry) => entry.directory !== directory)) {
@@ -151,10 +152,60 @@ test("a registry login failure reports its stage without exposing the token", ()
 
 function workflowScript(name) {
   const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
-  const step = workflow.split(`      - name: ${name}\n`)[1].split("      - name:")[0];
-  return step.split("        run: ")[1].replace(/^\|\n/, "")
-    .split("\n").map((line) => line.replace(/^ {10}/, "")).join("\n");
+  const run = workflow.split(`      - name: ${name}\n`)[1].split("        run: ")[1];
+  if (!run.startsWith("|\n")) return run.split("\n")[0];
+  return run.match(/^\|\n((?: {10}[^\n]*\n)+)/)[1].replace(/^ {10}/gm, "");
 }
+
+test("image reuse is scoped to the public build configuration", () => {
+  const root = mkdtempSync(join(tmpdir(), "rexolute-image-config-"));
+  try {
+    const output = join(root, "config");
+    const configure = (target, baseDomain) => {
+      writeFileSync(output, "");
+      const result = spawnSync("bash", ["deploy/frontend-config.sh"], {
+        encoding: "utf8",
+        env: { ...process.env, TARGET: target, APP: "client", BASE_DOMAIN: baseDomain, GITHUB_OUTPUT: output, GITHUB_REPOSITORY: "Example/Rexolute" },
+      });
+      assert.equal(result.status, 0, result.stderr);
+      return Object.fromEntries(readFileSync(output, "utf8").trim().split("\n").map((line) => line.split("=")));
+    };
+    const production = configure("production", "example.co");
+    const development = configure("development", "example.co");
+    assert.equal(production.client_domain, "client.example.co");
+    assert.equal(production.indexable, "true");
+    assert.equal(development.client_domain, "client-dev.example.co");
+    assert.equal(development.indexable, "false");
+    assert.equal(production.image, "ghcr.io/example/rexolute/client");
+    assert.equal(configure("production", "example.co").tag, production.tag);
+    assert.notEqual(configure("production", "other.example.co").tag, production.tag);
+    assert.notEqual(development.tag, production.tag);
+    assert.ok(development.tag.length <= 128);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rebuilt and reused images write the same immutable release reference", () => {
+  const root = mkdtempSync(join(tmpdir(), "rexolute-image-reference-"));
+  try {
+    const image = "ghcr.io/example/rexolute/admin";
+    const digest = `sha256:${"a".repeat(64)}`;
+    const reference = `${image}@${digest}`;
+    const script = workflowScript("Record immutable release image");
+    for (const reused of ["", reference]) {
+      const result = spawnSync("bash", ["-c", script], {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...process.env, APP: "admin", IMAGE: image, DIGEST: reused ? "" : digest, REUSED_REFERENCE: reused },
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(readFileSync(join(root, "images/admin.txt"), "utf8"), `${reference}\n`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 for (const deployment of deployments.filter(({ app }) => app === "landing")) {
   test(`native SSH uploads only the selected app and deploys ${deployment.target}`, () => {
@@ -165,7 +216,7 @@ for (const deployment of deployments.filter(({ app }) => app === "landing")) {
       mkdirSync(join(workspace, "deploy"), { recursive: true });
       mkdirSync(join(workspace, "images"));
       mkdirSync(runnerTemp);
-      for (const file of ["compose.yml", "release.sh"]) {
+      for (const file of ["compose.yml", "release.sh", "frontend-config.sh"]) {
         copyFileSync(`deploy/${file}`, join(workspace, "deploy", file));
       }
       copyFileSync(join(f.state, "releases/1-1/images/landing.txt"), join(workspace, "images/landing.txt"));

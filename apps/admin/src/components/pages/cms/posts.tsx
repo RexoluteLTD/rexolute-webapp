@@ -5,38 +5,29 @@ import Head from "@rexolute/ui/head";
 import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@rexolute/ui/table";
-
-type CmsPost = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  status: "Draft" | "Published";
-  author: string;
-  date: string;
-};
-
-const POST_STORAGE_KEY = "rexolute-cms-posts";
-const seedPosts: CmsPost[] = [
-  { id: "1", title: "Welcome to Rexolute", slug: "welcome-to-rexolute", excerpt: "Introducing the Rexolute platform.", category: "News", status: "Published", author: "Admin", date: "2026-11-20T09:00:00Z" },
-  { id: "2", title: "How online therapy works", slug: "how-online-therapy-works", excerpt: "A practical guide for clients.", category: "Resources", status: "Draft", author: "Admin", date: "2026-11-18T09:00:00Z" },
-];
+import { localPosts, type CmsPost } from "./local-content";
 
 export default function PostsPage() {
-  const [posts, setPosts] = useState<CmsPost[]>(seedPosts);
+  const [posts, setPosts] = useState<CmsPost[]>([]);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem(POST_STORAGE_KEY) ?? "[]") as CmsPost[];
-    if (saved.length) setPosts([...saved, ...seedPosts.filter((seed) => !saved.some((post) => post.slug === seed.slug))]);
+    try {
+      setPosts(localPosts.read());
+    } catch {
+      setError("Could not load posts from this browser.");
+    }
   }, []);
 
   const visible = posts.filter((post) => `${post.title} ${post.category} ${post.author}`.toLowerCase().includes(search.toLowerCase()));
   const removePost = (id: string) => {
-    const next = posts.filter((post) => post.id !== id);
-    setPosts(next);
-    localStorage.setItem(POST_STORAGE_KEY, JSON.stringify(next.filter((post) => !seedPosts.some((seed) => seed.id === post.id))));
+    try {
+      setPosts(localPosts.update((items) => items.filter((post) => post.id !== id)));
+      setError("");
+    } catch {
+      setError("Could not delete the post from this browser.");
+    }
   };
 
   return (
@@ -46,7 +37,7 @@ export default function PostsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Posts</h1>
-            <p className="text-sm text-muted-foreground">Manage all published and draft articles.</p>
+            <p className="text-sm text-muted-foreground">Manage posts stored in this browser.</p>
           </div>
           <Button asChild className="bg-[#2E8902] text-white hover:bg-[#236b02]"><Link to="/cms/new-post">Add new</Link></Button>
         </div>
@@ -59,6 +50,7 @@ export default function PostsPage() {
           </div>
         </div>
 
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
         <div className="rounded-md border bg-white">
           <Table>
             <TableHeader>
@@ -80,7 +72,7 @@ export default function PostsPage() {
                   </TableCell>
                   <TableCell>{post.author}</TableCell>
                   <TableCell>{post.category}</TableCell>
-                  <TableCell><span className={`rounded-full px-2 py-1 text-xs ${post.status === "Published" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700"}`}>{post.status}</span></TableCell>
+                  <TableCell><span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">{post.status === "Published" ? "Local copy" : "Draft"}</span></TableCell>
                   <TableCell>{new Date(post.date).toLocaleDateString()}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" aria-label={`Delete ${post.title}`} onClick={() => removePost(post.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
                 </TableRow>

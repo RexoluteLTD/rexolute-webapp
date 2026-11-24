@@ -19,6 +19,16 @@ describe("admin routes", () => {
     expect(router.state.location.pathname).toBe("/login");
     expect(router.state.location.search).toMatchObject({ redirect: "/tasks?tab=therapists" });
   });
+  it("reads the login challenge and return path from an OTP deep link", async () => {
+    router.update({ history: createMemoryHistory({
+      initialEntries: ["/verify-otp?challenge_id=10019107-ce18-458c-af79-acb163346878&redirect=%2Ftasks"],
+    }) });
+    await router.load();
+    expect(router.state.matches.at(-1)?.search).toEqual({
+      challenge_id: "10019107-ce18-458c-af79-acb163346878",
+      redirect: "/tasks",
+    });
+  });
   it("protects the root dashboard", async () => {
     router.update({ history: createMemoryHistory({ initialEntries: ["/"] }) });
     await router.load();

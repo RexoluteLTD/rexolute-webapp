@@ -1,6 +1,6 @@
 
 
-import { DocumentVerificationFlow } from "../../../components/admin/settings";
+import { DocumentVerificationFlow } from "../../../settings";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@rexolute/ui/button";

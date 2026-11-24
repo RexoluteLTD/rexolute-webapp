@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AuthPage from "../components/pages/auth";
+import ForgotPasswordForm from "../components/forms/forgot";
+import AuthLayout from "../components/layout/auth";
 import { validateAuthSearch } from "../lib/auth-search";
 export const Route = createFileRoute("/forgot-password")({
-  component: AuthPage,
+  component: () => <AuthLayout title="Forgot password"><ForgotPasswordForm /></AuthLayout>,
   validateSearch: validateAuthSearch,
 });

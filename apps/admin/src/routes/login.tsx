@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AuthPage from "../components/pages/auth";
+import LoginForm from "../components/forms/login";
+import AuthLayout from "../components/layout/auth";
 import { validateLoginSearch } from "../lib/auth-search";
 export const Route = createFileRoute("/login")({
-  component: AuthPage,
+  component: LoginPage,
   validateSearch: validateLoginSearch,
 });
+
+function LoginPage() {
+  const search = Route.useSearch({ shouldThrow: false });
+  if (!search) return null;
+
+  return <AuthLayout title="Login"><LoginForm redirect={search.redirect} /></AuthLayout>;
+}

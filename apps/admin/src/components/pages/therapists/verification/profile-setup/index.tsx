@@ -1,4 +1,4 @@
-import { PaginatedDocument } from "../../../../components/documents/file-viewer";
+import { PaginatedDocument } from "../../../../documents/file-viewer";
 
 
 import { Fragment, useEffect, useState } from "react";
@@ -13,19 +13,19 @@ import { Skeleton } from "@rexolute/ui/skeleton";
 import { CheckIcon } from "@rexolute/ui/icons";
 import Head from "@rexolute/ui/head";
 
-import { useAxiosInterceptors, useToast } from "../../../../hooks";
+import { useAxiosInterceptors, useToast } from "../../../../../hooks";
 import {
   ApproveForm,
   ApproveFormSchema,
   RejectForm,
   RejectFormSchema,
-} from "../../../../components/admin/forms";
+} from "../../../../forms";
 import {
   accountApproval,
   accountRejected,
   therapistApprovalSteps as steps,
-} from "../../../../lib/constants";
-import { useSharedData } from "../../../../hooks/use-layout";
+} from "../../../../../lib/constants";
+import { useSharedData } from "../../../../../hooks/use-layout";
 import {
   AccountApproval,
   AccountRejected,

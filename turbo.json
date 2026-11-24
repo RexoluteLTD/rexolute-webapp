@@ -103,6 +103,8 @@
         "vitest.config.ts",
         "apps/*/tsr.config.json",
         "scripts/**",
+        ".github/workflows/**",
+        "deploy/**",
         "!apps/*/src/routeTree.gen.ts",
         "apps/*/.env",
         "apps/*/.env.*"

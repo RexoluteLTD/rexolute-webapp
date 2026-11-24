@@ -7,56 +7,52 @@ import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
 import { Textarea } from "@rexolute/ui/textarea";
 import { Label } from "@rexolute/ui/label";
-
-type CmsPost = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  status: "Draft" | "Published";
-  author: string;
-  date: string;
-  content: string;
-};
-
-const POST_STORAGE_KEY = "rexolute-cms-posts";
-
-function slugify(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
+import { localPosts, slugify, type CmsPost } from "./local-content";
 
 export default function NewPostPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState("News");
+  const [savedId, setSavedId] = useState<string>();
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [StarterKit],
-    content: "<p>Start writing your post...</p>",
   });
 
-  const savePost = (status: CmsPost["status"]) => {
+  const savePost = () => {
+    if (!editor) return;
+    setNotice("");
+    setError("");
     if (!title.trim()) {
-      setNotice("Add a post title before saving.");
+      setError("Add a post title before saving.");
       return;
     }
-    const posts = JSON.parse(localStorage.getItem(POST_STORAGE_KEY) ?? "[]") as CmsPost[];
-    const post: CmsPost = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      slug: slug.trim() ? slugify(slug) : slugify(title),
-      excerpt: excerpt.trim(),
-      category,
-      status,
-      author: "Admin",
-      date: new Date().toISOString(),
-      content: editor?.getHTML() ?? "",
-    };
-    localStorage.setItem(POST_STORAGE_KEY, JSON.stringify([post, ...posts]));
-    setNotice(status === "Published" ? "Post published." : "Post saved as draft.");
+    const postSlug = slugify(slug.trim() || title);
+    if (!postSlug) {
+      setError("Enter a slug containing letters or numbers.");
+      return;
+    }
+    try {
+      const post: CmsPost = {
+        id: savedId ?? crypto.randomUUID(),
+        title: title.trim(),
+        slug: postSlug,
+        excerpt: excerpt.trim(),
+        category,
+        status: "Draft",
+        author: "Admin",
+        date: new Date().toISOString(),
+        content: editor.getHTML(),
+      };
+      localPosts.update((posts) => [post, ...posts.filter((item) => item.id !== post.id)]);
+      setSavedId(post.id);
+      setNotice("Draft saved in this browser.");
+    } catch {
+      setError("Could not save the draft in this browser.");
+    }
   };
 
   if (!editor) return null;
@@ -68,15 +64,15 @@ export default function NewPostPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Add new post</h1>
-            <p className="text-sm text-muted-foreground">Create and publish website content.</p>
+            <p className="text-sm text-muted-foreground">Write a draft and save it in this browser.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => savePost("Draft")}>Save draft</Button>
-            <Button className="bg-[#2E8902] text-white hover:bg-[#236b02]" onClick={() => savePost("Published")}>Publish</Button>
+            <Button className="bg-[#2E8902] text-white hover:bg-[#236b02]" onClick={savePost}>Save local draft</Button>
           </div>
         </div>
 
         {notice && <p role="status" className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{notice}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
@@ -85,7 +81,7 @@ export default function NewPostPage() {
               <Input
                 id="post-title"
                 value={title}
-                onChange={(event) => { setTitle(event.target.value); if (!slug) setSlug(slugify(event.target.value)); }}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="Enter post title"
                 className="mt-2 h-12 text-lg"
               />
@@ -111,7 +107,7 @@ export default function NewPostPage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="post-slug">Slug</Label>
-                  <Input id="post-slug" value={slug} onChange={(event) => setSlug(slugify(event.target.value))} className="mt-2" />
+                  <Input id="post-slug" value={slug} placeholder={slugify(title)} onChange={(event) => setSlug(event.target.value)} className="mt-2" />
                 </div>
                 <div>
                   <Label htmlFor="post-category">Category</Label>

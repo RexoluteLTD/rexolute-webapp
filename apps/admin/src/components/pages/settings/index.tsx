@@ -15,7 +15,7 @@ import { Input } from "@rexolute/ui/input";
 import { Label } from "@rexolute/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@rexolute/ui/select";
 import { cn } from "@rexolute/utils";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../../hooks/use-toast";
 
 type TabType =
   | "access-management"

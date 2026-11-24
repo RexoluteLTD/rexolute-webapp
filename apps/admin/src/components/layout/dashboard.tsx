@@ -36,7 +36,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = useLocation({ select: (location) => location.pathname });
 
-  const { session, signOut } = useAuth();
+  const { session, signOut, isSigningOut } = useAuth();
   const [cmsOpen, setCmsOpen] = useState(pathname.startsWith("/cms"));
 
   const navigation: MenuProps[] = [
@@ -231,7 +231,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                   <Bell className="h-6 w-6" />
                 </Button>
 
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
                       {/* <MoreVertical className="h-4 w-4" /> */}
@@ -249,13 +249,11 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                       <DropdownMenuItem>Edit user</DropdownMenuItem> */}
 
                     <DropdownMenuItem
-                      onClick={() => {
-                        console.log("logging out...");
-                        signOut();
-                      }}
+                      onSelect={() => void signOut()}
+                      disabled={isSigningOut}
                       className="text-red-600"
                     >
-                      Log out
+                      {isSigningOut ? "Logging out…" : "Log out"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

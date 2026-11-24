@@ -81,25 +81,7 @@ jobs:
         env:
           TARGET: ${{ needs.plan.outputs.environment }}
           BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
-        run: |
-          set -euo pipefail
-          : "${BASE_DOMAIN:?Set BASE_DOMAIN in the GitHub environment}"
-          [[ "$BASE_DOMAIN" =~ ^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$ ]]
-          landing_domain="$BASE_DOMAIN"
-          admin_domain="admin.$BASE_DOMAIN"
-          client_domain="app.$BASE_DOMAIN"
-          if [ "$TARGET" = development ]; then
-            landing_domain="landing-dev.$BASE_DOMAIN"
-            admin_domain="admin-dev.$BASE_DOMAIN"
-            client_domain="app-dev.$BASE_DOMAIN"
-          fi
-          echo "landing_domain=$landing_domain" >> "$GITHUB_OUTPUT"
-          echo "admin_domain=$admin_domain" >> "$GITHUB_OUTPUT"
-          echo "client_domain=$client_domain" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}/${APP}" >> "$GITHUB_OUTPUT"
-          echo "tag=build-$TARGET-$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
-        # APP is validated by the affected-app selector, not a freeform input.
-        # All VITE values below are public configuration.
+        run: bash deploy/frontend-config.sh
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -108,24 +90,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Resolve reusable release image
         id: resolve
+        if: inputs.force_all != true
         env:
           IMAGE: ${{ steps.config.outputs.image }}
           TAG: ${{ steps.config.outputs.tag }}
         run: |
           set -euo pipefail
           if docker pull "$IMAGE:$TAG" >/dev/null 2>&1; then
-            digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG")
-            [[ "$digest" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[a-f0-9]{64}$ ]]
-            echo "reuse=true" >> "$GITHUB_OUTPUT"
-            echo "digest=$digest" >> "$GITHUB_OUTPUT"
-            echo "Reusing immutable image $digest"
+            reference=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG")
+            [[ "$reference" == "$IMAGE@"* && "${reference#"$IMAGE@"}" =~ ^sha256:[a-f0-9]{64}$ ]]
+            echo "reference=$reference" >> "$GITHUB_OUTPUT"
+            echo "Reusing immutable image $reference"
           else
-            echo "reuse=false" >> "$GITHUB_OUTPUT"
             echo "No reusable image found; building $IMAGE:$TAG"
           fi
       - name: Build and publish selected app
         id: image
-        if: steps.resolve.outputs.reuse != 'true'
+        if: steps.resolve.outputs.reference == ''
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -136,7 +117,7 @@ jobs:
             ${{ steps.config.outputs.image }}:${{ steps.config.outputs.tag }}
           build-args: |
             APP=${{ matrix.app }}
-            VITE_SITE_INDEXABLE=${{ needs.plan.outputs.environment == 'production' }}
+            VITE_SITE_INDEXABLE=${{ steps.config.outputs.indexable }}
             VITE_LANDING_URL=https://${{ steps.config.outputs.landing_domain }}
             VITE_ADMIN_URL=https://${{ steps.config.outputs.admin_domain }}
             VITE_CLIENT_URL=https://${{ steps.config.outputs.client_domain }}
@@ -145,11 +126,15 @@ jobs:
       - name: Record immutable release image
         env:
           IMAGE: ${{ steps.config.outputs.image }}
-          DIGEST: ${{ steps.resolve.outputs.digest || steps.image.outputs.digest }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+          REUSED_REFERENCE: ${{ steps.resolve.outputs.reference }}
           APP: ${{ matrix.app }}
         run: |
+          set -euo pipefail
+          reference=${REUSED_REFERENCE:-"$IMAGE@$DIGEST"}
+          [[ "$reference" == "$IMAGE@"* && "${reference#"$IMAGE@"}" =~ ^sha256:[a-f0-9]{64}$ ]]
           mkdir -p images
-          printf '%s@%s\n' "$IMAGE" "$DIGEST" > "images/$APP.txt"
+          printf '%s\n' "$reference" > "images/$APP.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: image-${{ matrix.app }}
@@ -229,7 +214,7 @@ jobs:
             -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
           destination="$VPS_USER@$VPS_HOST"
           release_dir="/var/apps/$APP_DIR/releases/$RELEASE_ID"
-          tar -czf "$RUNNER_TEMP/release.tgz" deploy/compose.yml deploy/release.sh "images/$APP.txt"
+          tar -czf "$RUNNER_TEMP/release.tgz" deploy/compose.yml deploy/release.sh deploy/frontend-config.sh "images/$APP.txt"
           ssh "${ssh_options[@]}" -p "$VPS_SSH_PORT" "$destination" "umask 077; mkdir -p '$release_dir'"
           scp "${ssh_options[@]}" -P "$VPS_SSH_PORT" "$RUNNER_TEMP/release.tgz" "$destination:$release_dir/"
           # Stream quoted assignments over SSH; never write the pull token to a release file.

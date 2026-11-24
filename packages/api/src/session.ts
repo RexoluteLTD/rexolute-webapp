@@ -1,6 +1,6 @@
 import { jwtDecode } from "jwt-decode";
 import { publicApi } from "./transport";
-import type { Role } from "@rexolute/types";
+import type { LoginChallenge, Role } from "@rexolute/types";
 
 export interface Session {
   user: {
@@ -48,15 +48,40 @@ export const subscribeSession = (listener: () => void) => { listeners.add(listen
 export const getSession = () => current;
 export const clearSession = () => persist(null);
 
+function authenticate(tokens: Tokens, role: Role, email?: string) {
+  if (!tokens?.access_token || !tokens.refresh_token) throw new Error("Invalid authentication response");
+  const session = fromTokens(tokens);
+  if (session.user.role !== role) throw new Error(`This account cannot access the ${role} app.`);
+  session.user.email ??= email;
+  persist(session);
+  return session;
+}
+
 export async function verifyOtp(input: { code: string; identity: string; provider: string }, role: Role) {
   const response = await publicApi.post<{ data: Tokens }>("/auth/verify-otp?mode=token", {
     provider: input.provider, payload: { identity: input.identity, code: input.code },
   });
-  const session = fromTokens(response.data.data);
-  if (session.user.role !== role) throw new Error(`This account cannot access the ${role} app.`);
-  session.user.email ??= input.identity;
-  persist(session);
-  return session;
+  return authenticate(response.data.data, role, input.identity);
+}
+
+function loginChallengePath(id: string) {
+  return `/auth/login-challenges/${encodeURIComponent(id)}`;
+}
+
+export async function getLoginChallenge(id: string, signal: AbortSignal) {
+  const response = await publicApi.get<{ data: LoginChallenge }>(loginChallengePath(id), { signal });
+  return response.data.data;
+}
+
+export async function resendLoginChallenge(id: string, signal: AbortSignal) {
+  const response = await publicApi.post<{ data?: LoginChallenge } | undefined>(`${loginChallengePath(id)}/resend`, undefined, { signal });
+  return response.data?.data;
+}
+
+export async function verifyAdminLoginChallenge(id: string, code: string, signal: AbortSignal) {
+  const response = await publicApi.post<{ data: Tokens }>(`${loginChallengePath(id)}/verify`, { code }, { signal });
+  signal.throwIfAborted();
+  return authenticate(response.data.data, "admin");
 }
 
 export async function getValidSession(): Promise<Session | null> {

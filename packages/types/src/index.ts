@@ -87,6 +87,13 @@ export type MenuProps = {
 
 export type Role = "admin" | "anonymous" | "client" | "therapist" | "unknown";
 
+export interface LoginChallenge {
+  challenge_id: string;
+  delivery_status: string;
+  expires_at: string;
+  resend_after_seconds: number;
+}
+
 export type DetailsMode = "approve" | "default" | "reassign" | "rescheduled ";
 
 /**

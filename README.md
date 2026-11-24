@@ -22,7 +22,7 @@ Use Node 22.12+ (22.x) and Yarn 1.22.22.
 cp apps/landing/.env.example apps/landing/.env.local
 cp apps/admin/.env.example apps/admin/.env.local
 cp apps/client/.env.example apps/client/.env.local
-# Configure each app; API_PROXY_TARGET is optional for local API access.
+# Set VITE_LOCAL_API_URL in admin and client to the full versioned API endpoint for local dev.
 yarn install
 yarn dev
 ```
@@ -104,25 +104,25 @@ Vite loads environment files from the app directory (`apps/landing`, `apps/admin
 
 Only `.env.example` templates are versioned. Actual environment files are ignored by Git and excluded from Docker at every directory depth. App files always stay outside `public/`. Docker builds continue to receive public build-time values through build arguments; they do not copy your local environment files.
 
-`@rexolute/api` always uses the root-relative base `/v1/`. Both public/authentication and authenticated requests stay on the current app domain: for example, admin at `https://admin.example.co` calls `https://admin.example.co/v1/auth/signin`. Traefik routes that prefix to the backend container; it is excluded from the frontend router. No separate backend origin or browser CORS configuration is required for these same-origin requests. `VITE_API_BASE_URL` and old `NEXT_PUBLIC_*`, `NEXTAUTH_*`, and `APP_*` values are no longer used.
+`@rexolute/api` uses the root-relative base `/v1/` in both deployed environments. Public and authenticated requests stay on the app origin. For example, admin at `https://admin.example.co` calls `https://admin.example.co/v1/auth/signin`. Traefik routes that prefix to the backend service for the matching environment.
 
-For local Vite development/preview without Traefik, set `API_PROXY_TARGET=http://localhost:8080` in the app's `.env.local`. Vite forwards `/v1/` requests to that server while preserving the path, and also accepts `/api/v1/` with `/api` removed; the browser still uses its app origin. This variable is server-only, is not bundled into browser code, and is not required for deployed Docker images. Remove it if local Traefik already handles routing. All `VITE_*` values remain public build-time values, never secrets.
+For local Vite development, set `VITE_LOCAL_API_URL` in the app's `.env.local` to a full versioned endpoint such as `https://api-dev.rexolute.co/v1/`. The API must allow the local frontend origin through CORS for direct requests. Vite preview serves the deployed build and uses same-origin `/v1/`. For a same-origin proxy in local dev or preview, leave `VITE_LOCAL_API_URL` empty and set the server-only `API_PROXY_TARGET=http://localhost:8080`. All `VITE_*` values are public.
 
-The shared auth client uses the existing backend contract:
+Admin sign-in posts credentials to `/v1/auth/signin` and opens `/verify-otp?challenge_id=…`. The OTP page reads delivery status and resend timing from `GET /v1/auth/login-challenges/{id}`, verifies with `POST /v1/auth/login-challenges/{id}/verify` and `{ code }`, and requests another code with a bodyless `POST /v1/auth/login-challenges/{id}/resend` after the cooldown.
 
-1. `POST /v1/auth/signin` with `{ email, password }`.
-2. `POST /v1/auth/verify-otp?mode=token` with `{ provider, payload: { identity, code } }`.
-3. Read `data.access_token` and `data.refresh_token`; use access-token claims for frontend navigation.
-4. Refresh through `POST /v1/auth/refresh-token` with a bearer refresh token. Concurrent requests share one refresh operation.
-5. Add the access token to authenticated API calls. A 401 clears the local session and protected routes return to the relevant app login.
+Client sign-in posts credentials to `/v1/auth/signin`, then calls `POST /v1/auth/verify-otp?mode=token` with `{ provider, payload: { identity, code } }`.
+
+Both apps read `data.access_token` and `data.refresh_token` after verification. Authenticated requests use the access token and refresh through `POST /v1/auth/refresh-token` with a bearer refresh token. Concurrent requests share one refresh operation. A 401 clears the local session and protected routes return to the app login.
 
 Sessions use memory and tab-scoped `sessionStorage`, replacing the former NextAuth HTTP-only cookie. This is a deliberate architectural difference: browser scripts can access these tokens. A backend-managed HTTP-only cookie/BFF flow requires backend work and should replace browser token storage if that is the production security requirement. Never rely on decoded browser claims or route guards for authorization; every backend endpoint must validate the token and enforce role/permissions. Traefik must forward Authorization headers to the backend on the same app origin.
 
-Login return paths accept local root-relative URLs only and reject external or protocol-relative destinations. No browser API exists to overwrite session roles or permissions. Logout clears the current tab's tokens; backend revocation and cross-tab/session-wide logout are not implemented. Admin and client logins require matching backend roles. Client login assumes the same credential/OTP contract as admin; verify that contract against your backend before enabling it for users.
+Login return paths accept local root-relative URLs only and reject external or protocol-relative destinations. Admin logout calls `POST /v1/auth/signout` with the access token and clears the current tab's session even if the request fails. Client logout clears the current tab's session. Admin and client logins require matching backend roles.
 
 ## Feature status carried over from the original app
 
-This migration preserves existing screen implementations, not completion of unfinished product features. Most admin statistics/tables, session management actions, access management, password recovery, OTP resend, and PIN/password setup still contain placeholder behavior. Therapist approval now calls its parent handler; the existing verification context handoff still does not survive reload/deep-linking. Client dashboard functionality remains planned.
+This migration preserves existing screen implementations, not completion of unfinished product features. Most admin statistics/tables, session management actions, access management, password recovery, and PIN/password setup still contain placeholder behavior. Therapist approval now calls its parent handler; the existing verification context handoff still does not survive reload/deep-linking. Client dashboard functionality remains planned.
+
+The admin CMS stores drafts and category changes in the current browser while the posts API is pending.
 
 
 ## Landing accessibility, responsive layout, and SEO
@@ -182,7 +182,7 @@ Deployments follow these steps:
 
 1. Compare the current commit against the **last successful deployment on the same branch**. The first release, unavailable/non-ancestor history, and manual `force_all` runs select every app. Using the last successful release includes changes from failed deployments.
 2. Select changed apps plus consumers of changed workspace packages, following transitive dependencies. App source/public changes select that app; API/auth select admin/client; shared UI and root tooling/deployment changes select all consumers. Documentation-only changes do not build images. Renames/deletions are included.
-3. Run reusable CI checks (lint, repository typecheck, application tests and deployment-script tests). Publish only selected apps as separate GHCR images, supplying the three public app-origin Vite build values and `VITE_SITE_INDEXABLE` (`true` only for production). Docker builds typecheck/build only their selected app. Docker layer caches are scoped by environment and app.
+3. Run reusable CI checks (lint, repository typecheck, application tests and deployment-script tests). Publish only selected apps as separate GHCR images. Reuse an image when its target, source tree, and public build arguments match. Set the repository-level `BASE_DOMAIN` to enable image builds for same-repository pull requests. Forced deployments build fresh images. Docker builds typecheck/build only their selected app. Docker layer caches are scoped by environment and app.
 4. Deploy the exact published image **digest**, rather than a mutable `latest` tag. A branch-level concurrency queue serializes releases without interrupting SSH deployments; a branch-head check rejects superseded commits before uploading. GitHub's latest pending run includes accumulated changes since the last successful release.
 5. Start only selected apps with independent Compose projects and Traefik router names (`rexolute-production-admin`, etc.). Nginx serves port 80. Compose waits for the image's HTTP health check. A failed update attempts to restore that app's previous healthy manifest/digest and fails the workflow; first-time failures have no previous release to restore. Other healthy apps in the same release remain updated and the next run retries changes since the last fully successful release.
 

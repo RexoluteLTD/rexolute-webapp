@@ -5,7 +5,7 @@ import {
   PartnershipStatsCards,
   UserTable,
   UserTabs,
-} from "../../components/admin/dashboard/index";
+} from "../../dashboard";
 import { Button } from "@rexolute/ui/button";
 import { Input } from "@rexolute/ui/input";
 

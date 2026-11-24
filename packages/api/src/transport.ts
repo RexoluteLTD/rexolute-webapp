@@ -1,8 +1,10 @@
 import axios from "axios";
 
-// Resolve against the current app origin; Traefik forwards this prefix to the backend.
+// Only the local Vite dev server can override the same-origin deployment route.
+const localApiUrl = import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL?.trim() : undefined;
+
 export const publicApi = axios.create({
-  baseURL: "https://api-dev.rexolute.co/v1/",
+  baseURL: localApiUrl || "/v1/",
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });

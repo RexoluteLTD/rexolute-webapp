@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff, InfoIcon } from "lucide-react";
-import { useRouter, useSearch } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@rexolute/ui/button";
 import { Label } from "@rexolute/ui/label";
 import { Input } from "@rexolute/ui/input";
-import { publicApi as api, parseAxiosError } from "@rexolute/api";
+import { publicApi, parseAxiosError } from "@rexolute/api";
+import type { LoginChallenge } from "@rexolute/types";
+import { challengeTiming } from "../../lib/login-challenge";
 
 import { cn } from "@rexolute/utils";
 
@@ -22,10 +24,8 @@ const schema = z.object({
 
 type FormSchema = z.infer<typeof schema>;
 
-const LoginForm = () => {
+const LoginForm = ({ redirect }: { redirect: string | undefined }) => {
   const router = useRouter();
-  const search = useSearch({ strict: false }) as { redirect?: string };
-  // const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -39,58 +39,21 @@ const LoginForm = () => {
     defaultValues: { email: "", password: "" },
   });
 
-  /**
-   * handle sign in
-   * */
   async function onSubmit(values: FormSchema) {
-    // console.log("submit", values);
-    // simulate async
-    // await new Promise((r) => setTimeout(r, 500));
-
     try {
-      await api.post("/auth/signin", values);
+      const response = await publicApi.post<{ data: LoginChallenge }>("/auth/signin", values);
+      const challenge = response.data?.data;
+      if (!challenge?.challenge_id) throw new Error("Sign-in did not return a verification challenge.");
 
-      await router.navigate({ to: "/verify-otp", search: {
-        provider: "email", identity: values.email, redirect: search.redirect,
-      } });
-    } catch (error: any) {
-      const e = parseAxiosError(error);
-
-      setError(
-        "email",
-        {
-          type: "custom", // Or any other custom error type
-          message: e.message,
-        },
-        { shouldFocus: true }
-      );
+      await router.navigate({
+        to: "/verify-otp",
+        search: { challenge_id: challenge.challenge_id, redirect },
+        state: { loginChallenge: challengeTiming(challenge) },
+      });
+    } catch (error) {
+      setError("email", { type: "custom", message: parseAxiosError(error).message }, { shouldFocus: true });
     }
   }
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setIsLoading(true);
-  //   setError("");
-
-  //   try {
-  //     const result = await signIn("credentials", {
-  //       redirect: false,
-  //       email,
-  //       password,
-  //     });
-
-  //     if (result?.error) {
-  //       setError("Invalid email or password");
-  //       setIsLoading(false);
-  //       return;
-  //     }
-
-  //     router.navigate({ to: "/verify-otp" });
-  //   } catch (error) {
-  //     setError("An error occurred. Please try again.");
-  //     setIsLoading(false);
-  //   }
-  // };
 
   return (
     <div className="space-y-6">

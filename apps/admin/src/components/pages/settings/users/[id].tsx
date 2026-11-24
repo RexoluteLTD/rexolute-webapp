@@ -10,7 +10,7 @@ import { Button } from "@rexolute/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@rexolute/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@rexolute/ui/radio-group";
 import { Switch } from "@rexolute/ui/switch";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../../hooks/use-toast";
 
 type AdminRecord = {
   id: number;

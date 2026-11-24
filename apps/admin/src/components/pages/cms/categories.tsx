@@ -6,43 +6,59 @@ import { Input } from "@rexolute/ui/input";
 import { Textarea } from "@rexolute/ui/textarea";
 import { Label } from "@rexolute/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@rexolute/ui/table";
-
-type Category = { id: string; name: string; slug: string; description: string; count: number };
-const CATEGORY_STORAGE_KEY = "rexolute-cms-categories";
-const seedCategories: Category[] = [
-  { id: "1", name: "News", slug: "news", description: "Platform announcements and updates", count: 8 },
-  { id: "2", name: "Resources", slug: "resources", description: "Guides and educational content", count: 12 },
-  { id: "3", name: "Therapy", slug: "therapy", description: "Therapy and wellbeing articles", count: 6 },
-];
-
-function slugify(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
+import { localCategories, slugify, type Category } from "./local-content";
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(seedCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem(CATEGORY_STORAGE_KEY) ?? "[]") as Category[];
-    if (saved.length) setCategories([...saved, ...seedCategories.filter((seed) => !saved.some((item) => item.slug === seed.slug))]);
+    try {
+      setCategories(localCategories.read());
+    } catch {
+      setError("Could not load categories from this browser.");
+    }
   }, []);
 
-  const persist = (next: Category[]) => {
-    setCategories(next);
-    localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(next.filter((item) => !seedCategories.some((seed) => seed.id === item.id))));
+  const persist = (change: (items: Category[]) => Category[]) => {
+    try {
+      setCategories(localCategories.update(change));
+      setError("");
+      return true;
+    } catch {
+      setError("Could not save categories in this browser.");
+      return false;
+    }
+  };
+
+  const clearForm = () => {
+    setName("");
+    setSlug("");
+    setDescription("");
+    setEditing(null);
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
-    const value = { id: editing ?? crypto.randomUUID(), name: name.trim(), slug: slug ? slugify(slug) : slugify(name), description: description.trim(), count: 0 };
-    persist(editing ? categories.map((category) => category.id === editing ? { ...category, ...value } : category) : [value, ...categories]);
-    setName(""); setSlug(""); setDescription(""); setEditing(null);
+    const value = { name: name.trim(), slug: slugify(slug.trim() || name), description: description.trim() };
+    if (!value.slug) {
+      setError("Enter a slug containing letters or numbers.");
+      return;
+    }
+    const saved = persist((items) => editing
+      ? items.map((category) => category.id === editing ? { ...category, ...value } : category)
+      : [{ ...value, id: crypto.randomUUID(), count: 0 }, ...items]);
+    if (saved) clearForm();
+  };
+
+  const remove = (id: string) => {
+    if (persist((items) => items.filter((item) => item.id !== id)) && editing === id) clearForm();
   };
 
   const edit = (category: Category) => {
@@ -57,19 +73,20 @@ export default function CategoriesPage() {
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="text-sm text-muted-foreground">Organize posts into topics.</p>
+          <p className="text-sm text-muted-foreground">Manage categories stored in this browser.</p>
         </div>
 
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
         <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <form onSubmit={submit} className="h-fit rounded-md border bg-white p-4">
             <h2 className="mb-4 font-semibold">{editing ? "Edit category" : "Add new category"}</h2>
             <div className="space-y-4">
-              <div><Label htmlFor="category-name">Name</Label><Input id="category-name" value={name} onChange={(event) => { setName(event.target.value); if (!slug || !editing) setSlug(slugify(event.target.value)); }} className="mt-2" /></div>
-              <div><Label htmlFor="category-slug">Slug</Label><Input id="category-slug" value={slug} onChange={(event) => setSlug(slugify(event.target.value))} className="mt-2" /></div>
+              <div><Label htmlFor="category-name">Name</Label><Input id="category-name" value={name} onChange={(event) => setName(event.target.value)} className="mt-2" required /></div>
+              <div><Label htmlFor="category-slug">Slug</Label><Input id="category-slug" value={slug} placeholder={slugify(name)} onChange={(event) => setSlug(event.target.value)} className="mt-2" /></div>
               <div><Label htmlFor="category-description">Description</Label><Textarea id="category-description" value={description} onChange={(event) => setDescription(event.target.value)} className="mt-2" /></div>
               <div className="flex gap-2">
                 <Button type="submit" className="bg-[#2E8902] text-white hover:bg-[#236b02]">{editing ? "Update category" : "Add category"}</Button>
-                {editing && <Button type="button" variant="outline" onClick={() => { setEditing(null); setName(""); setSlug(""); setDescription(""); }}>Cancel</Button>}
+                {editing && <Button type="button" variant="outline" onClick={clearForm}>Cancel</Button>}
               </div>
             </div>
           </form>
@@ -88,7 +105,7 @@ export default function CategoriesPage() {
                       <TableCell className="max-w-xs text-muted-foreground">{category.description || "-"}</TableCell>
                       <TableCell>{category.slug}</TableCell>
                       <TableCell>{category.count}</TableCell>
-                      <TableCell><Button variant="ghost" size="icon" aria-label={`Delete ${category.name}`} onClick={() => persist(categories.filter((item) => item.id !== category.id))}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
+                      <TableCell><Button variant="ghost" size="icon" aria-label={`Delete ${category.name}`} onClick={() => remove(category.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
                     </TableRow>
                   ))}
                   {visible.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">No categories found.</TableCell></TableRow>}

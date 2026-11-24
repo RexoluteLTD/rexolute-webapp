@@ -23,11 +23,12 @@ test("documentation and generated-only changes do not build apps", () => {
 });
 test("a missing baseline initializes all apps", () => assert.deepEqual(changedApps(""), appNames));
 test("PR CI publishes and deployments reuse content-addressed app images", () => {
-  const checks = readFileSync(".github/workflows/checks.yml", "utf8");
+  const pullRequest = readFileSync(".github/workflows/pull-request.yml", "utf8");
   const deploy = readFileSync(".github/workflows/deploy.yml", "utf8");
-  assert.match(checks, /Build and publish reusable app image/);
-  assert.match(checks, /tag=build-\$TARGET-\$tree/);
+  assert.match(pullRequest, /Build and publish reusable app image/);
+  assert.match(pullRequest, /run: bash deploy\/frontend-config\.sh/);
+  assert.match(deploy, /run: bash deploy\/frontend-config\.sh/);
   assert.match(deploy, /Resolve reusable release image/);
-  assert.match(deploy, /steps\.resolve\.outputs\.reuse != 'true'/);
-  assert.match(deploy, /tag=build-\$TARGET-/);
+  assert.match(deploy, /id: resolve\n\s+if: inputs\.force_all != true/);
+  assert.match(deploy, /steps\.resolve\.outputs\.reference == ''/);
 });
