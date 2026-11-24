@@ -76,7 +76,7 @@ Keep generated trees in version control for editor support; ESLint excludes them
 
 The Next.js Pages Router, middleware, rewrites, server props, and NextAuth API route have been removed.
 
-- Landing: `/`, `/about-us`, `/contact-us`, `/terms-condition`; `/home` redirects to `/`.
+- Landing includes `/`, `/about-us`, `/contact-us`, `/blog`, `/blog/$slug`, and the legal pages. `/home` redirects to `/`.
 - Admin: protected `/`, `/users`, `/tasks`, `/therapists`, `/sessions`, `/settings`, and related nested routes. `/login`, `/verify-otp`, `/forgot-password`, `/create-password`, and `/create-pin` are public siblings of the protected layout.
 - Client: public `/login` and protected `/`. The client dashboard remains a placeholder for future product work.
 - Both dashboards render at their own origin's `/`. The former role-prefixed routes and auth aliases have been removed.
@@ -131,7 +131,9 @@ Landing uses app-scoped CSS in `apps/landing/src/landing.css`; shared dashboard 
 
 The contact form prepares a `mailto:hello@example.co` draft in the visitor's email app. It does not send a request to the API, claim that a message was sent, or persist form values. Sending requires an email app and the visitor's confirmation; a direct email link remains available. This is not a backend enquiry service.
 
-`yarn build:landing` runs Vite, then `apps/landing/scripts/prerender.mjs` renders all six public pages and a 404 page using the existing TanStack route tree. The resulting HTML includes visible content before JavaScript, unique titles/descriptions, canonical URLs, Open Graph/Twitter metadata, and Organization/WebSite JSON-LD. React hydrates that content for navigation and the contact/menu interactions. The app marks the router as hydrating static content to preserve matching server/client Suspense boundaries; these routes currently have no loader data. If loaders are introduced, add TanStack's data dehydration/hydration flow rather than treating loader data as static. The temporary server bundle is removed and is never deployed; hosting remains static Nginx. `/home` redirects permanently to `/` in the landing Nginx configuration.
+`yarn build:landing` runs Vite, then `apps/landing/scripts/prerender.mjs` renders the public pages, known blog articles, and a 404 page using the TanStack route tree. The resulting HTML includes visible content before JavaScript, unique titles/descriptions, canonical URLs, Open Graph/Twitter metadata, and Organization/WebSite JSON-LD. React hydrates that content for navigation and the contact, menu, and blog filter interactions. The app marks the router as hydrating static content to preserve matching server/client Suspense boundaries. The temporary server bundle is removed after prerendering. Static Nginx serves the generated pages and redirects `/home` to `/`.
+
+The blog uses mock data in `apps/landing/src/lib/blog.ts`. Tiptap renders article JSON to React elements during prerendering and browser navigation. The blog and mock articles emit `noindex` and stay out of the sitemap until real content is available. When adding API-backed route loaders, add TanStack's loader data dehydration and hydration flow.
 
 Set `VITE_LANDING_URL` to the actual site origin. `VITE_SITE_INDEXABLE=true` explicitly enables production indexing and adds the home, about and contact URLs to `sitemap.xml`; the default is `false`, which emits noindex metadata and a disallowing `robots.txt`. CI enables indexing only for the production environment. Privacy, cookie policy and terms pages contain tailored introductory copy and remain noindex until business/legal review confirms the organization details, operational data handling and service terms. They do not claim to be complete, jurisdiction-specific therapy agreements. Do not add invented testimonials, staff credentials, ratings, or clinical outcomes to visible copy or structured data.
 

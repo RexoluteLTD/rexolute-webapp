@@ -8,8 +8,8 @@ describe("landing routes", () => {
     expect(router.state.matches.at(-1)?.pathname).toBe(path);
     expect(router.state.matches.some((match) => match.status === "error")).toBe(false);
   });
-  it("marks unknown paths as not found", async () => {
-    router.update({ history: createMemoryHistory({ initialEntries: ["/missing"] }) });
+  it.each(["/missing", "/blog/missing-article"])("marks %s as not found", async (path) => {
+    router.update({ history: createMemoryHistory({ initialEntries: [path] }) });
     await router.load();
     expect(router.state.matches.some((match) => match.status === "notFound" || match._notFound)).toBe(true);
   });

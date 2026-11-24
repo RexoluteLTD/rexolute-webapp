@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { featuredBlogPost } from "./blog";
 vi.mock("@rexolute/utils/app-urls", () => ({ appUrls: { landing: "https://example.co", client: "https://client.example.co", admin: "https://admin.example.co" } }));
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 async function seo(indexable: boolean) {
@@ -29,5 +30,18 @@ describe("landing metadata", () => {
     expect(metadataTags("/")).toContainEqual({ property: "og:image", content: "https://example.co/images/pic1.jpg" });
     expect(structuredData()["@graph"][0]).toMatchObject({ "@type": "Organization", email: "hello@example.co" });
     expect(JSON.stringify(structuredData())).not.toMatch(/Review|aggregateRating|Medical/);
+  });
+  it("prerenders mock articles with article metadata and keeps them out of the index", async () => {
+    const { pageMetadata, publicPaths } = await seo(true);
+    const path = `/blog/${featuredBlogPost.slug}`;
+    expect(publicPaths).toContain(path);
+    expect(pageMetadata("/blog").robots).toBe("noindex, follow");
+    expect(pageMetadata(path)).toMatchObject({
+      canonical: `https://example.co${path}`,
+      robots: "noindex, follow",
+      description: featuredBlogPost.excerpt,
+      type: "article",
+    });
+    expect(pageMetadata("/blog/missing-article").canonical).toBeUndefined();
   });
 });

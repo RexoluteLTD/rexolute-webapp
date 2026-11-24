@@ -8,6 +8,7 @@ import { Seo } from "../seo";
 const links = [
   { to: "/", label: "Home" },
   { to: "/about-us", label: "About us" },
+  { to: "/blog", label: "Blog" },
   { to: "/contact-us", label: "Contact us" },
 ] as const;
 
@@ -16,6 +17,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const main = useRef<HTMLElement>(null);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const currentSection = pathname.startsWith("/blog/") ? "/blog" : undefined;
   const previousPath = useRef(pathname);
   useEffect(() => {
     if (previousPath.current !== pathname) {
@@ -37,7 +39,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <img src={logoGreen} alt="Rexolute" width={150} height={40} />
           </Link>
           <nav aria-label="Main navigation" className="desktop-nav">
-            {links.map(({ to, label }) => <Link key={to} to={to} activeOptions={{ exact: true }} activeProps={{ "aria-current": "page" }}>{label}</Link>)}
+            {links.map(({ to, label }) => <Link key={to} to={to} activeOptions={{ exact: true }} aria-current={to === currentSection ? "location" : undefined}>{label}</Link>)}
           </nav>
           <div className="header-actions">
             <a href={`${appUrls.client}/login`} className="landing-button header-cta">Get started</a>
@@ -47,7 +49,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav id="mobile-navigation" aria-label="Mobile navigation" className="mobile-nav landing-container" hidden={!menuOpen}>
-          {links.map(({ to, label }) => <Link key={to} to={to} activeOptions={{ exact: true }} activeProps={{ "aria-current": "page" }} onClick={() => setMenuOpen(false)}>{label}</Link>)}
+          {links.map(({ to, label }) => <Link key={to} to={to} activeOptions={{ exact: true }} aria-current={to === currentSection ? "location" : undefined} onClick={() => setMenuOpen(false)}>{label}</Link>)}
           <a href={`${appUrls.client}/login`}>Get started with Rexolute</a>
         </nav>
       </header>
@@ -61,7 +63,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <a className="landing-button button-light" href={`${appUrls.client}/login`}>Get started online</a>
             </div>
             <nav aria-label="Footer navigation" className="footer-links">
-              {links.map(({ to, label }) => <Link key={to} to={to}>{label}</Link>)}
+              {links.map(({ to, label }) => <Link key={to} to={to} activeOptions={{ exact: true }}>{label}</Link>)}
               <a href="mailto:hello@example.co">hello@example.co</a>
             </nav>
           </div>

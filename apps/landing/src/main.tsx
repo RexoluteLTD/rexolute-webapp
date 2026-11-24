@@ -3,6 +3,7 @@ import { createRoot, hydrateRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import "@rexolute/ui/styles.css";
 import "./landing.css";
+import "./pages/blog/blog.css";
 import { router } from "./router";
 import { prepareLandingRouter } from "./lib/hydration";
 

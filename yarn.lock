@@ -1904,6 +1904,11 @@
     "@tiptap/extensions" "3.35.0"
     "@tiptap/pm" "3.35.0"
 
+"@tiptap/static-renderer@3.35.0":
+  version "3.35.0"
+  resolved "https://registry.yarnpkg.com/@tiptap/static-renderer/-/static-renderer-3.35.0.tgz#263c565a7a980824fbe1830c2f06e6f567a6f140"
+  integrity sha512-8vIRSkIjHjbO+XWzAIE6B4zTXr2RIVWoq8oyNMvbyDUyhFDF8X54gB4FV+zYqzDrOfswkXR9qFQdeQSCRLz5zg==
+
 "@turbo/darwin-64@2.11.10":
   version "2.11.10"
   resolved "https://registry.yarnpkg.com/@turbo/darwin-64/-/darwin-64-2.11.10.tgz#824aa74de92806ef2a21932b4148feaea98e8887"

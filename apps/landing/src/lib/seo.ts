@@ -1,13 +1,18 @@
 import { appUrls } from "@rexolute/utils/app-urls";
+import { allBlogPosts, featuredBlogImage, findBlogPost } from "./blog";
 
 export const siteOrigin = new URL(appUrls.landing).origin;
 export const siteIndexable = import.meta.env.VITE_SITE_INDEXABLE === "true";
-export const publicPaths = ["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition"] as const;
+export const publicPaths = [
+  "/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog",
+  ...allBlogPosts.map(({ slug }) => `/blog/${slug}`),
+];
 
 const pages: Record<string, { title: string; description: string; noindex?: boolean }> = {
   "/": { title: "Online Therapy & Mental Wellness | Rexolute", description: "Find space to be heard with Rexolute. Explore online therapy, mental wellness support, and a thoughtful next step towards your wellbeing." },
   "/about-us": { title: "About Us | Therapy with a Human Approach | Rexolute", description: "Learn about Rexolute's purpose: making therapy more approachable through meaningful conversations, individual experiences, and support that fits everyday life." },
   "/contact-us": { title: "Contact Rexolute | Therapy & Platform Enquiries", description: "Contact the Rexolute team at hello@example.co with questions about getting started, the platform, partnerships, or therapist opportunities." },
+  "/blog": { title: "Mental Wellness Blog | Rexolute", description: "Browse articles on relationships, coping strategies, parenting, work-life balance and everyday mental wellness.", noindex: true },
   "/privacy": { title: "Privacy Information | Rexolute", description: "How the Rexolute public website handles contact enquiries and how its privacy information differs from authenticated therapy services.", noindex: true },
   "/policy": { title: "Cookie Policy | Rexolute", description: "Learn about cookies and browser storage on the Rexolute public website and separate signed-in services.", noindex: true },
   "/terms-condition": { title: "Terms and Conditions | Rexolute", description: "Information about using the Rexolute public website, enquiries, and the arrangements to clarify before starting a therapy service.", noindex: true },
@@ -15,13 +20,21 @@ const pages: Record<string, { title: string; description: string; noindex?: bool
 
 export function pageMetadata(pathname: string) {
   const path = pathname.replace(/\/$/, "") || "/";
-  const page = pages[path] ?? { title: "Page Not Found | Rexolute", description: "The page you requested could not be found. Explore Rexolute's therapy and mental wellness information.", noindex: true };
-  const canonical = pages[path] ? new URL(path, siteOrigin).href : undefined;
+  const post = path.startsWith("/blog/") ? findBlogPost(path.slice("/blog/".length)) : undefined;
+  const page = post ? { title: `${post.title} | Rexolute`, description: post.excerpt, noindex: true }
+    : pages[path] ?? { title: "Page Not Found | Rexolute", description: "The page you requested could not be found. Explore Rexolute's therapy and mental wellness information.", noindex: true };
+  const canonical = pages[path] || post ? new URL(path, siteOrigin).href : undefined;
+  const image = post?.image ?? (path === "/blog" ? featuredBlogImage : {
+    src: "/images/pic1.jpg",
+    alt: "People connecting with professionals through online appointments",
+  });
   return {
     ...page,
     canonical,
     robots: siteIndexable && !page.noindex ? "index, follow" : "noindex, follow",
-    image: new URL("/images/pic1.jpg", siteOrigin).href,
+    image: new URL(image.src, siteOrigin).href,
+    imageAlt: image.alt,
+    type: post ? "article" : "website",
   };
 }
 
@@ -38,13 +51,13 @@ export function metadataTags(pathname: string) {
     { name: "description", content: meta.description },
     { name: "robots", content: meta.robots },
     { name: "theme-color", content: "#287703" },
-    { property: "og:type", content: "website" },
+    { property: "og:type", content: meta.type },
     { property: "og:site_name", content: "Rexolute" },
     { property: "og:title", content: meta.title },
     { property: "og:description", content: meta.description },
     ...(meta.canonical ? [{ property: "og:url", content: meta.canonical }] : []),
     { property: "og:image", content: meta.image },
-    { property: "og:image:alt", content: "People connecting with professionals through online appointments" },
+    { property: "og:image:alt", content: meta.imageAlt },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: meta.title },
     { name: "twitter:description", content: meta.description },

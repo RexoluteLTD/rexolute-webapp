@@ -5,8 +5,9 @@ import { expect, it, vi } from "vitest";
 import { routeTree } from "./routeTree.gen";
 import { renderPage } from "./prerender";
 import { prepareLandingRouter } from "./lib/hydration";
+import { featuredBlogPost } from "./lib/blog";
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-it.each(["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/missing"])("hydrates %s without replacing its HTML", async (path) => {
+it.each(["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog", `/blog/${featuredBlogPost.slug}`, "/missing"])("hydrates %s without replacing its HTML", async (path) => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   const container = document.createElement("div");
   container.innerHTML = await renderPage(path === "/missing" ? "/404" : path);

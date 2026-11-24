@@ -1,5 +1,5 @@
 import { build } from "vite";
-import { readFile, writeFile, rm, mkdtemp } from "node:fs/promises";
+import { readFile, writeFile, rm, mkdtemp, mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -27,8 +27,9 @@ try {
     const html = template.replace(/<title>.*?<\/title>/s, () => `<title>${escape(metadata.title)}</title>`)
       .replace("<!--landing-seo-->", () => tags.join("\n    "))
       .replace('<div id="root"></div>', () => `<div id="root">${content}</div>`);
-    const file = path === "/" ? "index.html" : `${path.slice(1)}.html`;
-    await writeFile(resolve(root, "dist", file), html);
+    const file = resolve(root, "dist", path === "/" ? "index.html" : `${path.slice(1)}.html`);
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, html);
     console.log(`Prerendered ${path}`);
   }
   const paths = renderer.publicPaths.filter((path) => renderer.pageMetadata(path).robots.startsWith("index"));
