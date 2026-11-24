@@ -76,7 +76,7 @@ Keep generated trees in version control for editor support; ESLint excludes them
 
 The Next.js Pages Router, middleware, rewrites, server props, and NextAuth API route have been removed.
 
-- Landing includes `/`, `/about-us`, `/contact-us`, `/blog`, `/blog/$slug`, and the legal pages. `/home` redirects to `/`.
+- Landing includes `/`, `/about-us`, `/contact-us`, `/blog`, `/blog/<article UUID>`, and the legal pages. `/home` redirects to `/`.
 - Admin: protected `/`, `/users`, `/tasks`, `/therapists`, `/sessions`, `/settings`, and related nested routes. `/login`, `/verify-otp`, `/forgot-password`, `/create-password`, and `/create-pin` are public siblings of the protected layout.
 - Client: public `/login` and protected `/`. The client dashboard remains a placeholder for future product work.
 - Both dashboards render at their own origin's `/`. The former role-prefixed routes and auth aliases have been removed.
@@ -122,7 +122,9 @@ Login return paths accept local root-relative URLs only and reject external or p
 
 This migration preserves existing screen implementations, not completion of unfinished product features. Most admin statistics/tables, session management actions, access management, password recovery, and PIN/password setup still contain placeholder behavior. Therapist approval now calls its parent handler; the existing verification context handoff still does not survive reload/deep-linking. Client dashboard functionality remains planned.
 
-The admin CMS stores drafts and category changes in the current browser while the posts API is pending.
+The admin CMS reads and manages articles through `/v1/cms/posts/article` using the existing admin session. The backend grants draft access and article management through the `view`, `create`, `edit`, and `delete` permissions. Category settings still use browser storage.
+
+For featured image uploads, set `VITE_CLOUDINARY_CLOUD_NAME` and `VITE_CLOUDINARY_ARTICLE_PRESET` in the admin app's local environment. For deployment, set `CLOUDINARY_CLOUD_NAME` and `CLOUDINARY_ARTICLE_PRESET` in the GitHub environment variables or pass the corresponding `VITE_*` Docker build arguments. Use an unsigned preset restricted to an article image folder, disable overwrites, and configure file format and size limits consistent with the admin form (JPEG, PNG, WebP, or AVIF up to 10 MB). The browser saves Cloudinary's returned HTTPS URL with the article. [Cloudinary unsigned upload documentation](https://cloudinary.com/documentation/upload_images#unsigned_upload)
 
 
 ## Landing accessibility, responsive layout, and SEO
@@ -131,13 +133,13 @@ Landing uses app-scoped CSS in `apps/landing/src/landing.css`; shared dashboard 
 
 The contact form prepares a `mailto:hello@example.co` draft in the visitor's email app. It does not send a request to the API, claim that a message was sent, or persist form values. Sending requires an email app and the visitor's confirmation; a direct email link remains available. This is not a backend enquiry service.
 
-`yarn build:landing` runs Vite, then `apps/landing/scripts/prerender.mjs` renders the public pages, known blog articles, and a 404 page using the TanStack route tree. The resulting HTML includes visible content before JavaScript, unique titles/descriptions, canonical URLs, Open Graph/Twitter metadata, and Organization/WebSite JSON-LD. React hydrates that content for navigation and the contact, menu, and blog filter interactions. The app marks the router as hydrating static content to preserve matching server/client Suspense boundaries. The temporary server bundle is removed after prerendering. Static Nginx serves the generated pages and redirects `/home` to `/`.
+`yarn build:landing` runs Vite, then `apps/landing/scripts/prerender.mjs` renders the public pages, a shared article shell, and a 404 page using the TanStack route tree. The resulting HTML includes visible content before JavaScript, unique titles/descriptions, canonical URLs, Open Graph/Twitter metadata, and Organization/WebSite JSON-LD. React hydrates that content for navigation and the contact, menu, and blog filter interactions. The app marks the router as hydrating static content to preserve matching server/client Suspense boundaries. The temporary server bundle is removed after prerendering. Static Nginx serves the generated pages and redirects `/home` to `/`.
 
-The blog uses mock data in `apps/landing/src/lib/blog.ts`. Tiptap renders article JSON to React elements during prerendering and browser navigation. The blog and mock articles emit `noindex` and stay out of the sitemap until real content is available. When adding API-backed route loaders, add TanStack's loader data dehydration and hydration flow.
+The blog fetches published articles in the browser and renders article JSON with the existing Tiptap renderer. The static build requires no API access. Nginx serves the shared shell for UUID article URLs, and the API determines whether the article is published or shows the article's not-found view. The shell emits `noindex` until a published article loads. The static sitemap includes the blog index and excludes API-backed article URLs.
 
-Set `VITE_LANDING_URL` to the actual site origin. `VITE_SITE_INDEXABLE=true` explicitly enables production indexing and adds the home, about and contact URLs to `sitemap.xml`; the default is `false`, which emits noindex metadata and a disallowing `robots.txt`. CI enables indexing only for the production environment. Privacy, cookie policy and terms pages contain tailored introductory copy and remain noindex until business/legal review confirms the organization details, operational data handling and service terms. They do not claim to be complete, jurisdiction-specific therapy agreements. Do not add invented testimonials, staff credentials, ratings, or clinical outcomes to visible copy or structured data.
+Set `VITE_LANDING_URL` to the actual site origin. `VITE_SITE_INDEXABLE=true` explicitly enables production indexing and adds the home, about, contact, and blog index URLs to `sitemap.xml`; the default is `false`, which emits noindex metadata and a disallowing `robots.txt`. CI enables indexing only for the production environment. Privacy, cookie policy and terms pages contain tailored introductory copy and remain noindex until business/legal review confirms the organization details, operational data handling and service terms. They do not claim to be complete, jurisdiction-specific therapy agreements. Do not add invented testimonials, staff credentials, ratings, or clinical outcomes to visible copy or structured data.
 
-When adding a public page, update `publicPaths` and metadata in `apps/landing/src/lib/seo.ts` as well as the file route. Confirm prerendered HTML, metadata, sitemap membership, hydration, and Nginx status codes. Other static hosts must map clean URLs to the generated `.html` files and use `404.html` with HTTP 404 rather than an SPA fallback.
+When adding a public page, update `publicPaths` and metadata in `apps/landing/src/lib/seo.ts` as well as the file route. Confirm prerendered HTML, metadata, sitemap membership, hydration, and Nginx status codes. Other static hosts must map clean URLs to the generated `.html` files, map UUID article paths to `blog-article.html`, and serve `404.html` with HTTP 404 for unknown paths.
 
 ## Static deployment
 

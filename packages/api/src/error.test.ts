@@ -35,6 +35,14 @@ describe("API error normalization", () => {
     error.message = error;
     expect(parseAxiosError(failure(error)).message).toBe("Something went wrong");
   });
+  it("groups backend article validation messages by field", () => {
+    const error = parseAxiosError(failure({ status: "failed", code: "validation-error", error: [
+      { field: "title", message: "Title is required." },
+      { field: "tags", message: "Too many tags." },
+      { field: "tags", message: "Tag is too long." },
+    ] }, 400));
+    expect(error.errors).toEqual({ title: ["Title is required."], tags: ["Too many tags.", "Tag is too long."] });
+  });
 
   it("handles network and non-Axios failures", () => {
     expect(parseAxiosError(new AxiosError("Network error", "ERR_NETWORK"))).toMatchObject({ message: "Something went wrong", code: "ERR_NETWORK" });

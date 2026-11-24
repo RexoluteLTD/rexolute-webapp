@@ -26,6 +26,16 @@ function message(value: unknown, depth = 0): string | undefined {
 }
 
 function fieldErrors(value: unknown): ApiError["errors"] {
+  if (Array.isArray(value)) {
+    const fields = new Map<string, string[]>();
+    for (const item of value) {
+      const detail = record(item);
+      const text = message(detail?.message);
+      if (typeof detail?.field !== "string" || !text) continue;
+      fields.set(detail.field, [...(fields.get(detail.field) ?? []), text]);
+    }
+    return fields.size ? Object.fromEntries(fields) : undefined;
+  }
   const object = record(value);
   if (!object) return undefined;
   const entries = Object.entries(object).flatMap(([field, errors]) => {
@@ -45,7 +55,7 @@ export function parseAxiosError(error: unknown): ApiError {
       message: message(error.response?.data) ?? "Something went wrong",
       status: error.response?.status ?? error.status ?? 500,
       code: typeof code === "string" ? code : undefined,
-      errors: fieldErrors(data?.errors ?? detail?.errors),
+      errors: fieldErrors(data?.errors ?? detail?.errors ?? data?.error),
     };
   }
   return { message: error instanceof Error ? error.message : "Unknown error occurred" };

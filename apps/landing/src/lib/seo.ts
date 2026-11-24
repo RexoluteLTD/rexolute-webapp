@@ -1,39 +1,37 @@
 import { appUrls } from "@rexolute/utils/app-urls";
-import { allBlogPosts, featuredBlogImage, findBlogPost } from "./blog";
+import type { Article } from "@rexolute/types";
+import { articleIdPattern, articleText } from "./blog";
 
 export const siteOrigin = new URL(appUrls.landing).origin;
 export const siteIndexable = import.meta.env.VITE_SITE_INDEXABLE === "true";
 export const publicPaths = [
   "/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog",
-  ...allBlogPosts.map(({ slug }) => `/blog/${slug}`),
 ];
 
 const pages: Record<string, { title: string; description: string; noindex?: boolean }> = {
   "/": { title: "Online Therapy & Mental Health Support for Africans | Rexolute", description: "Rexolute offers online therapy for individuals, workplace wellbeing programmes and free mental wellness articles for Africans at home and abroad." },
   "/about-us": { title: "About Us | Mental Health Support for Africans | Rexolute", description: "Learn how Rexolute makes mental health support more affordable, accessible and available through individual therapy, workplace wellbeing and free resources." },
   "/contact-us": { title: "Contact Rexolute | Therapy & Platform Enquiries", description: "Contact the Rexolute team at hello@example.co with questions about getting started, the platform, partnerships, or therapist opportunities." },
-  "/blog": { title: "Mental Wellness Blog | Rexolute", description: "Browse articles on relationships, coping strategies, parenting, work-life balance and everyday mental wellness.", noindex: true },
+  "/blog": { title: "Mental Wellness Blog | Rexolute", description: "Browse articles on relationships, coping strategies, parenting, work-life balance and everyday mental wellness." },
   "/privacy": { title: "Privacy Information | Rexolute", description: "How the Rexolute public website handles contact enquiries and how its privacy information differs from authenticated therapy services.", noindex: true },
   "/policy": { title: "Cookie Policy | Rexolute", description: "Learn about cookies and browser storage on the Rexolute public website and separate signed-in services.", noindex: true },
   "/terms-condition": { title: "Terms and Conditions | Rexolute", description: "Information about using the Rexolute public website, enquiries, and the arrangements to clarify before starting a therapy service.", noindex: true },
 };
 
-export function pageMetadata(pathname: string) {
+export function pageMetadata(pathname: string, article?: Article) {
   const path = pathname.replace(/\/$/, "") || "/";
-  const post = path.startsWith("/blog/") ? findBlogPost(path.slice("/blog/".length)) : undefined;
-  const page = post ? { title: `${post.title} | Rexolute`, description: post.excerpt, noindex: true }
-    : pages[path] ?? { title: "Page Not Found | Rexolute", description: "The page you requested could not be found. Explore Rexolute's therapy and mental wellness information.", noindex: true };
+  const post = article?.state === "published" && path === `/blog/${article.id}` ? article : undefined;
+  const page = post ? { title: `${post.title} | Rexolute`, description: articleText(post.content).replace(/\s+/g, " ").slice(0, 160).trim() || post.title, noindex: false }
+    : pages[path] ?? (path.startsWith("/blog/") && articleIdPattern.test(path.slice("/blog/".length))
+      ? { title: "Blog Article | Rexolute", description: "Read articles on the Rexolute mental wellness blog.", noindex: true }
+      : { title: "Page Not Found | Rexolute", description: "The page you requested could not be found. Explore Rexolute's therapy and mental wellness information.", noindex: true });
   const canonical = pages[path] || post ? new URL(path, siteOrigin).href : undefined;
-  const image = post?.image ?? (path === "/blog" ? featuredBlogImage : {
-    src: "/images/pic1.jpg",
-    alt: "People connecting with professionals through online appointments",
-  });
   return {
     ...page,
     canonical,
     robots: siteIndexable && !page.noindex ? "index, follow" : "noindex, follow",
-    image: new URL(image.src, siteOrigin).href,
-    imageAlt: image.alt,
+    image: new URL(post?.featureImage || "/images/pic1.jpg", siteOrigin).href,
+    imageAlt: post?.featureImage ? "" : "People connecting with professionals through online appointments",
     type: post ? "article" : "website",
   };
 }
@@ -45,8 +43,8 @@ export function structuredData() {
   ] };
 }
 
-export function metadataTags(pathname: string) {
-  const meta = pageMetadata(pathname);
+export function metadataTags(pathname: string, article?: Article) {
+  const meta = pageMetadata(pathname, article);
   return [
     { name: "description", content: meta.description },
     { name: "robots", content: meta.robots },

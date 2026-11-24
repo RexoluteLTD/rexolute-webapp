@@ -5,12 +5,15 @@ import { expect, it, vi } from "vitest";
 import { routeTree } from "./routeTree.gen";
 import { renderPage } from "./prerender";
 import { prepareLandingRouter } from "./lib/hydration";
-import { featuredBlogPost } from "./lib/blog";
+import { blogArticleShellPath } from "./lib/blog";
+vi.mock("@rexolute/api/articles", () => ({
+  publicArticles: { list: () => new Promise(() => {}), get: () => new Promise(() => {}) },
+}));
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-it.each(["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog", `/blog/${featuredBlogPost.slug}`, "/missing"])("hydrates %s without replacing its HTML", async (path) => {
+it.each(["/", "/about-us", "/contact-us", "/privacy", "/policy", "/terms-condition", "/blog", "/blog/10019107-ce18-458c-af79-acb163346878", "/missing"])("hydrates %s without replacing its HTML", async (path) => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   const container = document.createElement("div");
-  container.innerHTML = await renderPage(path === "/missing" ? "/404" : path);
+  container.innerHTML = await renderPage(path === "/missing" ? "/404" : path.startsWith("/blog/") ? blogArticleShellPath : path);
   document.body.append(container);
   const heading = container.querySelector("h1");
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }), isServer: false, scrollRestoration: true });

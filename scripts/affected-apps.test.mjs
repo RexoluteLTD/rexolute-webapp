@@ -10,7 +10,7 @@ test("app edits and public assets select only their owning app", () => {
   }
 });
 test("shared auth and API changes select only their transitive consumers", () => {
-  assert.deepEqual(affectedApps(["packages/api/src/session.ts"], workspaces), ["admin", "client"]);
+  assert.deepEqual(affectedApps(["packages/api/src/session.ts"], workspaces), appNames);
   assert.deepEqual(affectedApps(["packages/auth/src/guard.tsx"], workspaces), ["admin", "client"]);
 });
 test("UI and root build/deployment configuration select all apps", () => {

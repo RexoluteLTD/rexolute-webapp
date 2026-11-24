@@ -24,12 +24,20 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   client_domain=$(frontend_domain "$TARGET" client "$BASE_DOMAIN")
   indexable=false
   if [[ "$TARGET" == production ]]; then indexable=true; fi
+  cloud_name=
+  article_preset=
+  if [[ "$APP" == admin ]]; then
+    cloud_name=${CLOUDINARY_CLOUD_NAME:-}
+    article_preset=${CLOUDINARY_ARTICLE_PRESET:-}
+    [[ "$cloud_name" =~ ^[[:alnum:]_-]*$ && "$article_preset" =~ ^[[:alnum:]_-]*$ ]]
+  fi
 
   tree=$(git rev-parse 'HEAD^{tree}')
-  config_hash=$(printf '%s\n' "$APP" "$indexable" "$landing_domain" "$admin_domain" "$client_domain" | sha256sum)
+  config_hash=$(printf '%s\n' "$APP" "$indexable" "$landing_domain" "$admin_domain" "$client_domain" "$cloud_name" "$article_preset" | sha256sum)
   {
     printf 'landing_domain=%s\nadmin_domain=%s\nclient_domain=%s\n' "$landing_domain" "$admin_domain" "$client_domain"
     printf 'indexable=%s\nimage=ghcr.io/%s/%s\n' "$indexable" "${GITHUB_REPOSITORY,,}" "$APP"
+    printf 'cloudinary_cloud_name=%s\ncloudinary_article_preset=%s\n' "$cloud_name" "$article_preset"
     printf 'tag=build-%s-%s-%s\n' "$TARGET" "$tree" "${config_hash%% *}"
   } >> "$GITHUB_OUTPUT"
 fi

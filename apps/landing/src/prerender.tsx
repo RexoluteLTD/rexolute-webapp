@@ -2,6 +2,7 @@ import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/rea
 import { renderToString } from "react-dom/server";
 import { routeTree } from "./routeTree.gen";
 export { metadataTags, pageMetadata, publicPaths, siteOrigin, siteIndexable, structuredData } from "./lib/seo";
+export { blogArticleShellPath } from "./lib/blog";
 
 export async function renderPage(path: string) {
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [path] }), isServer: true });

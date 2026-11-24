@@ -1,15 +1,3 @@
-export type CmsPost = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  category: string;
-  status: "Draft" | "Published";
-  author: string;
-  date: string;
-  content?: string;
-};
-
 export type Category = {
   id: string;
   name: string;
@@ -17,11 +5,6 @@ export type Category = {
   description: string;
   count: number;
 };
-
-const seedPosts: CmsPost[] = [
-  { id: "1", title: "Welcome to Rexolute", slug: "welcome-to-rexolute", excerpt: "Introducing the Rexolute platform.", category: "News", status: "Published", author: "Admin", date: "2026-11-20T09:00:00Z" },
-  { id: "2", title: "How online therapy works", slug: "how-online-therapy-works", excerpt: "A practical guide for clients.", category: "Resources", status: "Draft", author: "Admin", date: "2026-11-18T09:00:00Z" },
-];
 
 const seedCategories: Category[] = [
   { id: "1", name: "News", slug: "news", description: "Platform announcements and updates", count: 8 },
@@ -53,7 +36,6 @@ function localCollection<T extends { slug: string }>(key: string, seeds: T[]) {
   return { read, update };
 }
 
-export const localPosts = localCollection("rexolute-cms-posts", seedPosts);
 export const localCategories = localCollection("rexolute-cms-categories", seedCategories);
 
 export function slugify(value: string) {

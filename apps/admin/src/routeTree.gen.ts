@@ -20,7 +20,6 @@ import { Route as AuthenticatedActivitiesRouteImport } from "./routes/_authentic
 import { Route as AuthenticatedTasksRouteImport } from "./routes/_authenticated/tasks";
 import { Route as AuthenticatedCmsCategoriesRouteImport } from "./routes/_authenticated/cms/categories";
 import { Route as AuthenticatedCmsNewPostRouteImport } from "./routes/_authenticated/cms/new-post";
-import { Route as AuthenticatedCmsPostsRouteImport } from "./routes/_authenticated/cms/posts";
 import { Route as AuthenticatedPartnershipsIndexRouteImport } from "./routes/_authenticated/partnerships/index";
 import { Route as AuthenticatedReportsIndexRouteImport } from "./routes/_authenticated/reports/index";
 import { Route as AuthenticatedSessionsIndexRouteImport } from "./routes/_authenticated/sessions/index";
@@ -32,6 +31,8 @@ import { Route as AuthenticatedSettingsRolesPermissionsRouteImport } from "./rou
 import { Route as AuthenticatedSettingsUploadRouteImport } from "./routes/_authenticated/settings/upload";
 import { Route as AuthenticatedTherapistsIndexRouteImport } from "./routes/_authenticated/therapists/index";
 import { Route as AuthenticatedUsersIndexRouteImport } from "./routes/_authenticated/users/index";
+import { Route as AuthenticatedCmsPostsIndexRouteImport } from "./routes/_authenticated/cms/posts/index";
+import { Route as AuthenticatedCmsPostsIdRouteImport } from "./routes/_authenticated/cms/posts/$id";
 import { Route as AuthenticatedSettingsUsersIdRouteImport } from "./routes/_authenticated/settings/users/$id";
 import { Route as AuthenticatedTherapistsDetailsIdRouteImport } from "./routes/_authenticated/therapists/details/$id";
 import { Route as AuthenticatedTherapistsVerificationIndexRouteImport } from "./routes/_authenticated/therapists/verification/index";
@@ -94,11 +95,6 @@ const AuthenticatedCmsCategoriesRoute =
 const AuthenticatedCmsNewPostRoute = AuthenticatedCmsNewPostRouteImport.update({
   id: "/cms/new-post",
   path: "/cms/new-post",
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any);
-const AuthenticatedCmsPostsRoute = AuthenticatedCmsPostsRouteImport.update({
-  id: "/cms/posts",
-  path: "/cms/posts",
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any);
 const AuthenticatedPartnershipsIndexRoute =
@@ -166,6 +162,17 @@ const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   path: "/users/",
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any);
+const AuthenticatedCmsPostsIndexRoute =
+  AuthenticatedCmsPostsIndexRouteImport.update({
+    id: "/cms/posts/",
+    path: "/cms/posts/",
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any);
+const AuthenticatedCmsPostsIdRoute = AuthenticatedCmsPostsIdRouteImport.update({
+  id: "/cms/posts/$id",
+  path: "/cms/posts/$id",
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any);
 const AuthenticatedSettingsUsersIdRoute =
   AuthenticatedSettingsUsersIdRouteImport.update({
     id: "/settings/users/$id",
@@ -226,7 +233,6 @@ export interface FileRoutesByFullPath {
   "/tasks": typeof AuthenticatedTasksRoute;
   "/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
   "/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
-  "/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   "/settings/": typeof AuthenticatedSettingsIndexRoute;
   "/therapists/": typeof AuthenticatedTherapistsIndexRoute;
   "/users/": typeof AuthenticatedUsersIndexRoute;
+  "/cms/posts/$id": typeof AuthenticatedCmsPostsIdRoute;
   "/settings/users/$id": typeof AuthenticatedSettingsUsersIdRoute;
   "/therapists/details/$id": typeof AuthenticatedTherapistsDetailsIdRoute;
   "/therapists/verification/education": typeof AuthenticatedTherapistsVerificationEducationRoute;
@@ -245,6 +252,7 @@ export interface FileRoutesByFullPath {
   "/therapists/verification/professional": typeof AuthenticatedTherapistsVerificationProfessionalRoute;
   "/therapists/verification/profile-setup": typeof AuthenticatedTherapistsVerificationProfileSetupRoute;
   "/users/details/$id": typeof AuthenticatedUsersDetailsIdRoute;
+  "/cms/posts/": typeof AuthenticatedCmsPostsIndexRoute;
   "/therapists/verification/": typeof AuthenticatedTherapistsVerificationIndexRoute;
 }
 export interface FileRoutesByTo {
@@ -258,7 +266,6 @@ export interface FileRoutesByTo {
   "/": typeof AuthenticatedIndexRoute;
   "/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
   "/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
-  "/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   "/settings": typeof AuthenticatedSettingsIndexRoute;
   "/therapists": typeof AuthenticatedTherapistsIndexRoute;
   "/users": typeof AuthenticatedUsersIndexRoute;
+  "/cms/posts/$id": typeof AuthenticatedCmsPostsIdRoute;
   "/settings/users/$id": typeof AuthenticatedSettingsUsersIdRoute;
   "/therapists/details/$id": typeof AuthenticatedTherapistsDetailsIdRoute;
   "/therapists/verification/education": typeof AuthenticatedTherapistsVerificationEducationRoute;
@@ -277,6 +285,7 @@ export interface FileRoutesByTo {
   "/therapists/verification/professional": typeof AuthenticatedTherapistsVerificationProfessionalRoute;
   "/therapists/verification/profile-setup": typeof AuthenticatedTherapistsVerificationProfileSetupRoute;
   "/users/details/$id": typeof AuthenticatedUsersDetailsIdRoute;
+  "/cms/posts": typeof AuthenticatedCmsPostsIndexRoute;
   "/therapists/verification": typeof AuthenticatedTherapistsVerificationIndexRoute;
 }
 export interface FileRoutesById {
@@ -292,7 +301,6 @@ export interface FileRoutesById {
   "/_authenticated/": typeof AuthenticatedIndexRoute;
   "/_authenticated/cms/categories": typeof AuthenticatedCmsCategoriesRoute;
   "/_authenticated/cms/new-post": typeof AuthenticatedCmsNewPostRoute;
-  "/_authenticated/cms/posts": typeof AuthenticatedCmsPostsRoute;
   "/_authenticated/sessions/details": typeof AuthenticatedSessionsDetailsRoute;
   "/_authenticated/sessions/list": typeof AuthenticatedSessionsListRoute;
   "/_authenticated/sessions/therapists": typeof AuthenticatedSessionsTherapistsRoute;
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   "/_authenticated/settings/": typeof AuthenticatedSettingsIndexRoute;
   "/_authenticated/therapists/": typeof AuthenticatedTherapistsIndexRoute;
   "/_authenticated/users/": typeof AuthenticatedUsersIndexRoute;
+  "/_authenticated/cms/posts/$id": typeof AuthenticatedCmsPostsIdRoute;
   "/_authenticated/settings/users/$id": typeof AuthenticatedSettingsUsersIdRoute;
   "/_authenticated/therapists/details/$id": typeof AuthenticatedTherapistsDetailsIdRoute;
   "/_authenticated/therapists/verification/education": typeof AuthenticatedTherapistsVerificationEducationRoute;
@@ -311,6 +320,7 @@ export interface FileRoutesById {
   "/_authenticated/therapists/verification/professional": typeof AuthenticatedTherapistsVerificationProfessionalRoute;
   "/_authenticated/therapists/verification/profile-setup": typeof AuthenticatedTherapistsVerificationProfileSetupRoute;
   "/_authenticated/users/details/$id": typeof AuthenticatedUsersDetailsIdRoute;
+  "/_authenticated/cms/posts/": typeof AuthenticatedCmsPostsIndexRoute;
   "/_authenticated/therapists/verification/": typeof AuthenticatedTherapistsVerificationIndexRoute;
 }
 export interface FileRouteTypes {
@@ -326,7 +336,6 @@ export interface FileRouteTypes {
     | "/tasks"
     | "/cms/categories"
     | "/cms/new-post"
-    | "/cms/posts"
     | "/sessions/details"
     | "/sessions/list"
     | "/sessions/therapists"
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | "/settings/"
     | "/therapists/"
     | "/users/"
+    | "/cms/posts/$id"
     | "/settings/users/$id"
     | "/therapists/details/$id"
     | "/therapists/verification/education"
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | "/therapists/verification/professional"
     | "/therapists/verification/profile-setup"
     | "/users/details/$id"
+    | "/cms/posts/"
     | "/therapists/verification/";
   fileRoutesByTo: FileRoutesByTo;
   to:
@@ -358,7 +369,6 @@ export interface FileRouteTypes {
     | "/"
     | "/cms/categories"
     | "/cms/new-post"
-    | "/cms/posts"
     | "/sessions/details"
     | "/sessions/list"
     | "/sessions/therapists"
@@ -370,6 +380,7 @@ export interface FileRouteTypes {
     | "/settings"
     | "/therapists"
     | "/users"
+    | "/cms/posts/$id"
     | "/settings/users/$id"
     | "/therapists/details/$id"
     | "/therapists/verification/education"
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | "/therapists/verification/professional"
     | "/therapists/verification/profile-setup"
     | "/users/details/$id"
+    | "/cms/posts"
     | "/therapists/verification";
   id:
     | "__root__"
@@ -391,7 +403,6 @@ export interface FileRouteTypes {
     | "/_authenticated/"
     | "/_authenticated/cms/categories"
     | "/_authenticated/cms/new-post"
-    | "/_authenticated/cms/posts"
     | "/_authenticated/sessions/details"
     | "/_authenticated/sessions/list"
     | "/_authenticated/sessions/therapists"
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | "/_authenticated/settings/"
     | "/_authenticated/therapists/"
     | "/_authenticated/users/"
+    | "/_authenticated/cms/posts/$id"
     | "/_authenticated/settings/users/$id"
     | "/_authenticated/therapists/details/$id"
     | "/_authenticated/therapists/verification/education"
@@ -410,6 +422,7 @@ export interface FileRouteTypes {
     | "/_authenticated/therapists/verification/professional"
     | "/_authenticated/therapists/verification/profile-setup"
     | "/_authenticated/users/details/$id"
+    | "/_authenticated/cms/posts/"
     | "/_authenticated/therapists/verification/";
   fileRoutesById: FileRoutesById;
 }
@@ -501,13 +514,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthenticatedCmsNewPostRouteImport;
       parentRoute: typeof AuthenticatedRouteRoute;
     };
-    "/_authenticated/cms/posts": {
-      id: "/_authenticated/cms/posts";
-      path: "/cms/posts";
-      fullPath: "/cms/posts";
-      preLoaderRoute: typeof AuthenticatedCmsPostsRouteImport;
-      parentRoute: typeof AuthenticatedRouteRoute;
-    };
     "/_authenticated/partnerships/": {
       id: "/_authenticated/partnerships/";
       path: "/partnerships";
@@ -585,6 +591,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport;
       parentRoute: typeof AuthenticatedRouteRoute;
     };
+    "/_authenticated/cms/posts/": {
+      id: "/_authenticated/cms/posts/";
+      path: "/cms/posts";
+      fullPath: "/cms/posts/";
+      preLoaderRoute: typeof AuthenticatedCmsPostsIndexRouteImport;
+      parentRoute: typeof AuthenticatedRouteRoute;
+    };
+    "/_authenticated/cms/posts/$id": {
+      id: "/_authenticated/cms/posts/$id";
+      path: "/cms/posts/$id";
+      fullPath: "/cms/posts/$id";
+      preLoaderRoute: typeof AuthenticatedCmsPostsIdRouteImport;
+      parentRoute: typeof AuthenticatedRouteRoute;
+    };
     "/_authenticated/settings/users/$id": {
       id: "/_authenticated/settings/users/$id";
       path: "/settings/users/$id";
@@ -650,7 +670,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute;
   AuthenticatedCmsCategoriesRoute: typeof AuthenticatedCmsCategoriesRoute;
   AuthenticatedCmsNewPostRoute: typeof AuthenticatedCmsNewPostRoute;
-  AuthenticatedCmsPostsRoute: typeof AuthenticatedCmsPostsRoute;
   AuthenticatedSessionsDetailsRoute: typeof AuthenticatedSessionsDetailsRoute;
   AuthenticatedSessionsListRoute: typeof AuthenticatedSessionsListRoute;
   AuthenticatedSessionsTherapistsRoute: typeof AuthenticatedSessionsTherapistsRoute;
@@ -662,6 +681,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute;
   AuthenticatedTherapistsIndexRoute: typeof AuthenticatedTherapistsIndexRoute;
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute;
+  AuthenticatedCmsPostsIdRoute: typeof AuthenticatedCmsPostsIdRoute;
   AuthenticatedSettingsUsersIdRoute: typeof AuthenticatedSettingsUsersIdRoute;
   AuthenticatedTherapistsDetailsIdRoute: typeof AuthenticatedTherapistsDetailsIdRoute;
   AuthenticatedTherapistsVerificationEducationRoute: typeof AuthenticatedTherapistsVerificationEducationRoute;
@@ -669,6 +689,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTherapistsVerificationProfessionalRoute: typeof AuthenticatedTherapistsVerificationProfessionalRoute;
   AuthenticatedTherapistsVerificationProfileSetupRoute: typeof AuthenticatedTherapistsVerificationProfileSetupRoute;
   AuthenticatedUsersDetailsIdRoute: typeof AuthenticatedUsersDetailsIdRoute;
+  AuthenticatedCmsPostsIndexRoute: typeof AuthenticatedCmsPostsIndexRoute;
   AuthenticatedTherapistsVerificationIndexRoute: typeof AuthenticatedTherapistsVerificationIndexRoute;
 }
 
@@ -678,7 +699,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCmsCategoriesRoute: AuthenticatedCmsCategoriesRoute,
   AuthenticatedCmsNewPostRoute: AuthenticatedCmsNewPostRoute,
-  AuthenticatedCmsPostsRoute: AuthenticatedCmsPostsRoute,
   AuthenticatedSessionsDetailsRoute: AuthenticatedSessionsDetailsRoute,
   AuthenticatedSessionsListRoute: AuthenticatedSessionsListRoute,
   AuthenticatedSessionsTherapistsRoute: AuthenticatedSessionsTherapistsRoute,
@@ -691,6 +711,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedTherapistsIndexRoute: AuthenticatedTherapistsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedCmsPostsIdRoute: AuthenticatedCmsPostsIdRoute,
   AuthenticatedSettingsUsersIdRoute: AuthenticatedSettingsUsersIdRoute,
   AuthenticatedTherapistsDetailsIdRoute: AuthenticatedTherapistsDetailsIdRoute,
   AuthenticatedTherapistsVerificationEducationRoute:
@@ -702,6 +723,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTherapistsVerificationProfileSetupRoute:
     AuthenticatedTherapistsVerificationProfileSetupRoute,
   AuthenticatedUsersDetailsIdRoute: AuthenticatedUsersDetailsIdRoute,
+  AuthenticatedCmsPostsIndexRoute: AuthenticatedCmsPostsIndexRoute,
   AuthenticatedTherapistsVerificationIndexRoute:
     AuthenticatedTherapistsVerificationIndexRoute,
 };

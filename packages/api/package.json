@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./articles": "./src/articles.ts",
     "./axios": "./src/axios.ts",
     "./error": "./src/error.ts",
     ".": "./src/index.ts",

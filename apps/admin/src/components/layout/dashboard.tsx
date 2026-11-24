@@ -31,6 +31,7 @@ import { Button } from "@rexolute/ui/button";
 import { logoGreen } from "@rexolute/assets/svg";
 import { profileAvatarImg } from "@rexolute/assets/images";
 import { SharedLayoutProvider } from "../../providers/layout-provider";
+import { canManageArticle } from "../pages/cms/article-form";
 
 const Layout: FC<LayoutProps> = ({ children }) => {
   const router = useRouter();
@@ -146,7 +147,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                     </button>
                     {cmsOpen && (
                       <div className="ml-5 mt-1 space-y-1 border-l border-gray-200 pl-3">
-                        <Link
+                        {canManageArticle(session?.user, "create") && <Link
                           to="/cms/new-post"
                           className={`flex items-center rounded-md px-2 py-2 text-sm ${
                             isActive("/cms/new-post")
@@ -155,8 +156,8 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                           }`}
                         >
                           <FileText className="mr-2 h-4 w-4" />
-                          New post
-                        </Link>
+                          New article
+                        </Link>}
                         <Link
                           to="/cms/posts"
                           className={`flex items-center rounded-md px-2 py-2 text-sm ${
@@ -166,7 +167,7 @@ const Layout: FC<LayoutProps> = ({ children }) => {
                           }`}
                         >
                           <Files className="mr-2 h-4 w-4" />
-                          Posts
+                          Articles
                         </Link>
                         <Link
                           to="/cms/categories"

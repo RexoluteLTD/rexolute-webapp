@@ -1,90 +1,70 @@
-import { useState } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Search } from "lucide-react";
-import { allBlogPosts, blogCategories, blogPosts, featuredBlogImage, featuredBlogPost, type BlogCategory } from "../../lib/blog";
+import { articleErrorMessage, publicArticles } from "@rexolute/api/articles";
 import { BlogByline } from "./byline";
-
-const categories = ["All", ...blogCategories] as const;
+import { useBlogRequest } from "../../lib/use-blog-request";
 
 export default function BlogIndexPage() {
-  const [category, setCategory] = useState<BlogCategory | "All">("All");
-  const [query, setQuery] = useState("");
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const matchingPosts = category === "All" && terms.length === 0 ? blogPosts : allBlogPosts.filter((post) => {
-    const topics = [post.category, post.relatedCategory];
-    if (category !== "All" && !topics.includes(category)) return false;
+  const [query, setQuery] = useState({ page: 1, category: "", tag: "" });
+  const load = useCallback((signal: AbortSignal) => publicArticles.list({
+    page: query.page, state: "published", category: query.category || undefined, tag: query.tag || undefined,
+  }, signal), [query]);
+  const { data, error, loading, retry } = useBlogRequest(load);
+  const articles = data?.items.filter((article) => article.state === "published") ?? [];
+  const categoryError = error?.errors?.category?.join(" ");
+  const tagError = error?.errors?.tag?.join(" ");
+  const pageCount = data ? Math.max(1, Math.ceil(data.total_count / data.limit)) : 1;
 
-    const searchText = [post.title, post.excerpt, post.author.name, ...topics].join(" ").toLowerCase();
-    return terms.every((term) => searchText.includes(term));
-  });
+  function filter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    setQuery({ page: 1, category: String(fields.get("category") ?? "").trim(), tag: String(fields.get("tag") ?? "").trim() });
+  }
 
   return (
     <div className="blog-page landing-container">
       <h1 className="blog-heading">Blog</h1>
-      <section className="blog-feature" aria-labelledby="featured-post-title">
-        <img className="blog-feature-image" {...featuredBlogImage} fetchPriority="high" />
-        <div className="blog-feature-card">
-          <p className="blog-post-meta">
-            <span className="blog-category blog-category-highlight">{featuredBlogPost.category}</span>
-            <span>{featuredBlogPost.readingMinutes} min read</span>
-          </p>
-          <h2 id="featured-post-title">{featuredBlogPost.title}</h2>
-          <p className="blog-feature-excerpt">{featuredBlogPost.excerpt}</p>
-          <BlogByline author={featuredBlogPost.author} publishedAt={featuredBlogPost.publishedAt} />
-          <Link className="blog-read-more" to="/blog/$slug" params={{ slug: featuredBlogPost.slug }} aria-label={`Read more about ${featuredBlogPost.title}`}>
-            Read more <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
-
-      <section className="blog-library" aria-labelledby="blog-library-title">
+      <section aria-labelledby="blog-library-title">
         <h2 id="blog-library-title" className="blog-library-heading">Mental Wellness Articles<br />Just for You.</h2>
-        <div role="search" aria-label="Blog articles" className="blog-search">
-          <label htmlFor="blog-search" className="sr-only">Search articles by keyword or topic</label>
-          <Search size={21} aria-hidden="true" />
-          <input id="blog-search" type="search" placeholder="Search by keyword or topic" value={query} onChange={(event) => setQuery(event.target.value)} />
-        </div>
-
-        <div className="blog-library-layout">
-          <aside className="blog-filters" aria-labelledby="blog-categories">
-            <h3 id="blog-categories">Categories</h3>
-            <ul>
-              {categories.map((item) => (
-                <li key={item}>
-                  <button type="button" aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>
-                </li>
-              ))}
-            </ul>
-          </aside>
-
-          <div>
-            <p role="status" className="sr-only">{matchingPosts.length} {matchingPosts.length === 1 ? "article" : "articles"} found</p>
-            {matchingPosts.length > 0 ? (
+        <div className="blog-library-layout blog-api-library">
+          <form onSubmit={filter} className="blog-filters">
+            <h3>Filter articles</h3>
+            <label htmlFor="blog-category">Category</label>
+            <input id="blog-category" name="category" aria-invalid={!!categoryError} aria-describedby={categoryError ? "blog-category-error" : undefined} />
+            {categoryError && <p id="blog-category-error" role="alert">{categoryError}</p>}
+            <label htmlFor="blog-tag">Tag</label>
+            <input id="blog-tag" name="tag" aria-invalid={!!tagError} aria-describedby={tagError ? "blog-tag-error" : undefined} />
+            {tagError && <p id="blog-tag-error" role="alert">{tagError}</p>}
+            <button className="landing-button" type="submit">Apply filters</button>
+          </form>
+          <div aria-busy={loading}>
+            {loading && <p role="status">Loading articles…</p>}
+            {error && <div className="blog-empty" role="alert"><p>{articleErrorMessage(error)}</p><button type="button" className="landing-button" onClick={retry}>Try again</button></div>}
+            {data && articles.length === 0 && <div className="blog-empty"><h3>No articles found</h3><p>Try another category or tag.</p></div>}
+            {articles.length > 0 && (
               <ul className="blog-post-grid">
-                {matchingPosts.map((post) => (
-                  <li key={post.slug}>
+                {articles.map((article) => (
+                  <li key={article.id}>
                     <article className="blog-card">
-                      <Link className="blog-card-link" to="/blog/$slug" params={{ slug: post.slug }}>
-                        <img className="blog-card-image" src={post.image.src} alt="" width={post.image.width} height={post.image.height} loading="lazy" />
+                      <Link className="blog-card-link" to="/blog/$slug" params={{ slug: article.id }}>
+                        {article.featureImage && <img className="blog-card-image" src={article.featureImage} alt="" width={710} height={470} loading="lazy" />}
                         <div className="blog-card-content">
-                          <p className="blog-post-meta">
-                            <span className="blog-category">{post.category}</span>
-                            <span>{post.readingMinutes} min read</span>
-                          </p>
-                          <h3>{post.title}</h3>
-                          <BlogByline author={post.author} publishedAt={post.publishedAt} />
+                          {article.category && <p className="blog-post-meta"><span className="blog-category">{article.category}</span></p>}
+                          <h3>{article.title}</h3>
+                          <BlogByline username={article.username} date={article.created_at} />
                         </div>
                       </Link>
                     </article>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <div className="blog-empty">
-                <h3>No articles found</h3>
-                <p>Try another keyword or category.</p>
-                <button type="button" className="landing-button" onClick={() => { setQuery(""); setCategory("All"); }}>Clear filters</button>
-              </div>
+            )}
+            {data && (pageCount > 1 || query.page > 1) && (
+              <nav className="blog-pagination" aria-label="Article pages">
+                <button className="landing-button" type="button" disabled={query.page <= 1} onClick={() => setQuery({ ...query, page: query.page - 1 })}>Previous</button>
+                <span>Page {data.current_page} of {pageCount}</span>
+                <button className="landing-button" type="button" disabled={query.page >= pageCount} onClick={() => setQuery({ ...query, page: query.page + 1 })}>Next</button>
+              </nav>
             )}
           </div>
         </div>

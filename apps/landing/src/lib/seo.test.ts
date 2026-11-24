@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { featuredBlogPost } from "./blog";
+import type { Article } from "@rexolute/types";
+import { blogArticleShellPath } from "./blog";
 vi.mock("@rexolute/utils/app-urls", () => ({ appUrls: { landing: "https://example.co", client: "https://client.example.co", admin: "https://admin.example.co" } }));
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 async function seo(indexable: boolean) {
@@ -10,7 +11,7 @@ async function seo(indexable: boolean) {
 describe("landing metadata", () => {
   it("gives public pages unique titles, descriptions, and clean canonical URLs", async () => {
     const { pageMetadata } = await seo(true);
-    const pages = ["/", "/about-us", "/contact-us"].map(pageMetadata);
+    const pages = ["/", "/about-us", "/contact-us"].map((path) => pageMetadata(path));
     expect(new Set(pages.map((page) => page.title)).size).toBe(3);
     expect(new Set(pages.map((page) => page.description)).size).toBe(3);
     expect(pages.every((page) => page.robots === "index, follow")).toBe(true);
@@ -31,17 +32,23 @@ describe("landing metadata", () => {
     expect(structuredData()["@graph"][0]).toMatchObject({ "@type": "Organization", email: "hello@example.co" });
     expect(JSON.stringify(structuredData())).not.toMatch(/Review|aggregateRating|Medical/);
   });
-  it("prerenders mock articles with article metadata and keeps them out of the index", async () => {
+  it("uses article metadata only once a matching published article has loaded", async () => {
     const { pageMetadata, publicPaths } = await seo(true);
-    const path = `/blog/${featuredBlogPost.slug}`;
-    expect(publicPaths).toContain(path);
-    expect(pageMetadata("/blog").robots).toBe("noindex, follow");
-    expect(pageMetadata(path)).toMatchObject({
+    const article: Article = {
+      id: "10019107-ce18-458c-af79-acb163346878", postType: "article", title: "A moment to breathe",
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Small steps are fine." }] }] },
+      state: "published", tags: [], user_id: "admin-1", username: "Editor", count_likes: 0, count_comments: 0,
+      created_at: "2026-11-24T00:00:00Z", updated_at: "2026-11-24T00:00:00Z",
+    };
+    const path = `/blog/${article.id}`;
+    expect(publicPaths).not.toContain(path);
+    expect(pageMetadata(blogArticleShellPath)).toMatchObject({ robots: "noindex, follow", canonical: undefined });
+    expect(pageMetadata(path, article)).toMatchObject({
       canonical: `https://example.co${path}`,
-      robots: "noindex, follow",
-      description: featuredBlogPost.excerpt,
+      robots: "index, follow",
+      description: "Small steps are fine.",
       type: "article",
     });
-    expect(pageMetadata("/blog/missing-article").canonical).toBeUndefined();
+    expect(pageMetadata(path, { ...article, state: "draft" }).canonical).toBeUndefined();
   });
 });

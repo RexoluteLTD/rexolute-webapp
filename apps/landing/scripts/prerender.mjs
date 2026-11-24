@@ -18,7 +18,7 @@ try {
   }
   const template = await readFile(resolve(root, "dist/index.html"), "utf8");
   if (!template.includes('<!--landing-seo-->') || !template.includes('<div id="root"></div>')) throw new Error("Landing HTML is missing its prerender placeholders.");
-  for (const path of [...renderer.publicPaths, "/404"]) {
+  for (const path of [...renderer.publicPaths, "/404", renderer.blogArticleShellPath]) {
     const metadata = renderer.pageMetadata(path);
     const tags = renderer.metadataTags(path).map((attributes) => `<meta data-landing-seo ${Object.entries(attributes).map(([key, value]) => `${key}="${escape(value)}"`).join(" ")} />`);
     if (metadata.canonical) tags.push(`<link data-landing-seo rel="canonical" href="${escape(metadata.canonical)}" />`);
@@ -27,7 +27,8 @@ try {
     const html = template.replace(/<title>.*?<\/title>/s, () => `<title>${escape(metadata.title)}</title>`)
       .replace("<!--landing-seo-->", () => tags.join("\n    "))
       .replace('<div id="root"></div>', () => `<div id="root">${content}</div>`);
-    const file = resolve(root, "dist", path === "/" ? "index.html" : `${path.slice(1)}.html`);
+    const file = resolve(root, "dist", path === "/" ? "index.html"
+      : path === renderer.blogArticleShellPath ? "blog-article.html" : `${path.slice(1)}.html`);
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, html);
     console.log(`Prerendered ${path}`);
